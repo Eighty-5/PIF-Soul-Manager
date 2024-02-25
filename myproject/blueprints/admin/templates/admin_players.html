@@ -1,0 +1,30 @@
+{% extends 'layout.html' %}
+
+{% block title %}
+    Session Select
+{% endblock %}
+
+{% block main %}
+<table class="table table-hover table-bordered table-striped">
+    <tr>
+        <td class="title">Player ID</td>
+        <td class="title">Player Name</td>
+        <td class="title">Player Number</td>
+        <td class="title">Session Id</td>
+        <td class="title">Session Number</td>
+        <td class="title">User ID</td>
+        <td class="title">Username</td>
+    </tr>
+    {% for player in players %}
+        <tr>
+            <td>{{ player.id }}</td>
+            <td>{{ player.name }}</td>
+            <td>{{ player.number }}</td>
+            <td>{{ player.session.id }}</td>
+            <td>{{ player.session.number }}</td>
+            <td>{{ player.session.user.id }}</td>
+            <td>{{ player.session.user.username }}</td>
+        </tr>
+    {% endfor %}
+</table>
+{% endblock %}

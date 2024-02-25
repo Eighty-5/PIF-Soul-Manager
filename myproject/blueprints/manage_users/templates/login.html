@@ -1,0 +1,29 @@
+{% extends 'layout.html' %}
+
+{% block title %}
+    Login
+{% endblock %}
+
+{% block header %}
+    <h1 style="text-align:center">Login</h1>
+{% endblock %}
+
+{% block main %}
+    <div class="shadow p-3 mb-5 bg-body-tertiary rounded">
+        <form method="POST" action="/login">
+            {{ form.hidden_tag() }}
+            {{ form.username.label(class="form-label") }}
+            {{ form.username(class="form-control", data="form.username", placeholder="Username") }}
+            <br>
+            {{ form.hidden_tag() }}
+            {{ form.password.label(class="form-label") }}
+            {{ form.password(class="form-control", placeholder="Password") }}
+            <br>
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
+    </div>
+
+    <div class="shadow p-3 mb-5 bg-body-tertiary rounded">
+        <a href="/register" class="btn btn-secondary">Register Here</a>
+    </div>
+{% endblock %}

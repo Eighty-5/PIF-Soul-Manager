@@ -1,0 +1,40 @@
+{% extends 'layout.html' %}
+
+{% block title %}
+    Admin Pokedex
+{% endblock %}
+
+{% include 'navbar.html' %}
+
+<div class="shadow p-3 mb-5 bg-body-tertiary rounded">
+    <form method="POST" action="/admin/pokedex/base">
+        {{ form.hidden_tag() }}
+        {{ form.species.label(class="form-label") }}
+        {{ form.species(class="form-control", placeholder="Pokemon") }}
+        <br>
+        {{ form.hidden_tag() }}
+        {{ form.type_1.label(class="form-label") }}
+        {{ form.type_1(class="form-control", placeholder="Type 1") }}
+        <br>
+        {{ form.hidden_tag() }}
+        {{ form.type_2.label(class="form-label") }}
+        {{ form.type_2(class="form-control", placeholder="Type 2") }}
+        <br>
+        <button type="submit" class="btn btn-primary">Submit</button>
+      </form>
+</div>
+
+<table class="table table-hover table-bordered table-striped">
+    {% for pokemon in pokedex %}
+        <tr>
+            <td>{{ pokemon.id }}. </td>
+            <td>{{ pokemon.pokedex_id }}. </td>
+            <td>{{ pokemon.species }}</td>
+            <td>{{ pokemon.type_1 }}</td>
+            <td>{{ pokemon.type_2 }}</td>
+            <td>{{ pokemon.family }}</td>
+            <td>{{ pokemon.family_order }}</td>
+        </tr>
+    {% endfor %}       
+</table>
+{% endblock %}

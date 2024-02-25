@@ -1,0 +1,29 @@
+{% extends 'layout.html' %}
+
+{% block title %}
+    Session Select
+{% endblock %}
+
+{% block main %}
+<table class="table table-hover table-bordered table-striped">
+    <tr>
+        <td class="title">User ID</td>
+        <td class="title">Username</td>
+        <td class="title">Sessions</td>
+        <td class="title">Current Sessions</td>
+        <td class="title">Hash</td>
+        <td class="title">Last Login</td>
+    </tr>
+    {% for user in users %}
+        <tr>
+            <td>{{ user.id }}. </td>
+            <td>{{ user.username }}</td>
+            <td>{{ user.sessions }}</td>
+            <td>{{ user.current_session }}</td>
+            <td>{{ user.hash }}</td>
+            <td>{{ user.last_login }}</td>
+            <td><a href="{{ url_for('manage_users.delete_user',id=user.id) }}">Delete</a></td>
+        </tr>
+    {% endfor %}       
+</table>
+{% endblock %}

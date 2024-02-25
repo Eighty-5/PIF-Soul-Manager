@@ -1,0 +1,49 @@
+{% extends 'layout.html' %}
+
+{% block title %}
+    Create Session
+{% endblock %}
+
+{% block jscript %}
+    <script> 
+        let player_num_select = document.getElementById("player_num");
+
+        player_num_select.onchange = function() {
+            alert("1");
+            // for (let i = 0; i < 4; i++) {
+            //     document.getElementById("player_names-", i, "-player_name").style.display="none";
+            // }
+            // players = document.getElementById("player_num").value;
+            // alert(player_num_select.value)
+            // for (let i = 1; i <= players; i++) {
+            //     document.getElementById("player_names-", i, "-player_name").style.display="inline"
+            // }
+        }
+    </script> 
+{% endblock %}
+
+{% block header %}
+    Create Session
+{% endblock %}
+
+{% block main %}
+<div class="shadow p-3 mb-5 bg-body-tertiary rounded">
+    <form method="POST" action="/session/create">
+        {{ form.hidden_tag() }}
+        {{ form.player_num.label(class="form-label") }}
+        {{ form.player_num(class="form-control") }}
+        <br>
+        {{ form.player_names.label(class="form-label")}}
+        {% for name in form.player_names %}
+            {{ name.hidden_tag() }}
+            {{ name.player_name(class="form-control", placeholder="Player Name") }}
+        {% endfor %}
+        <br>
+        {{ form.hidden_tag() }}
+        {{ form.ruleset.label(class="form-label") }}
+        {{ form.ruleset(class="form-control") }}
+        <br>
+        <button type="submit" class="btn btn-primary">Submit</button>
+      </form>
+</div>
+{% endblock %}

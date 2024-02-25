@@ -1,0 +1,21 @@
+{% extends 'layout.html' %}
+
+{% block title %}
+    Session Select
+{% endblock %}
+
+{% block main %}
+<table class="table table-hover table-bordered table-striped">
+    {% for session in sessions %}
+        <tr>
+            <td>Session Id: {{ session.id }}</td>
+            <td>Session User: {{ session.user_id }}</td>
+            <td>Session Number: {{ session.number }}</td>
+            <td>{% for player in session.players %}
+                Player {{ player.player_num }}: {{ player.name }}<br>
+            {% endfor %}</td>
+            <td><a href="{{ url_for('admin.admin_delete_session', session_id=session.id) }}" class="btn btn-danger">Delete</a></td>
+        </tr>
+    {% endfor %}
+</table>
+{% endblock %}

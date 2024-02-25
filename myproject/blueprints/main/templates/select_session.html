@@ -1,0 +1,29 @@
+{% extends 'layout.html' %}
+
+{% block title %}
+    Session Select
+{% endblock %}
+
+{% block header %}
+    Select Session
+{% endblock %}
+
+{% block main %}
+    {% for session in sessions %}
+        Session Id: {{ session.id }}
+        <br>
+        Session User: {{ session.user_id }}
+        <br>
+        Session Number: {{ session.number }}
+        <br>
+        {% for player in session.players %}
+            Player {{ player.player_num }}: {{ player.name }}
+            <br>
+        {% endfor %}
+        <form action="{{ url_for('main.select_session')}}" method="POST">
+            <button class="btn btn-primary" name="{{ session.number }}">Select</button>
+        </form>
+        <a href="{{ url_for('main.delete_session', session_number=session.number) }}" class="btn btn-danger">Delete</a>
+        <br/><br/>
+    {% endfor %}
+{% endblock %}

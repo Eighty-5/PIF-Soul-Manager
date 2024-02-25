@@ -1,0 +1,63 @@
+.foo {
+    background-color:red;
+}
+
+.player-column {
+    float: left;
+    margin-left:5px;
+    margin-right:5px
+}
+
+.sprite {
+    width:200px;
+    height:200px;
+    line-height: 200px;
+    background-color:pink;
+    text-align:center;
+    float:right;
+}
+
+.pokemon {
+    width:400px;
+    height:200px;
+    float:left;
+    margin-bottom:10px;
+    border:1px dashed
+}
+
+.pokemon-info {
+    float:left;
+    width:200px;
+    height:200px;
+    text-align:center;
+}
+
+.right-info {
+    float:left;
+    width:200px;
+    height:200px;
+}
+
+.species {
+    background-color:aquamarine;
+    width:200px;
+}
+
+.dropdown-info {
+    width:180px;
+    text-align:center;
+}
+
+.submit-info {
+    width:100px;
+}
+
+.dropdown-info-test {
+    width:150px;
+}
+
+.center-div {
+    margin:auto;
+    width:50%;
+    text-align:center;
+}

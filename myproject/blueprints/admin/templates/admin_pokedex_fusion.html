@@ -1,0 +1,41 @@
+{% extends 'layout.html' %}
+
+{% block title %}
+    Admin Pokedex Fusion
+{% endblock %}
+
+{% block main %}
+<table class="table table-hover table-bordered table-striped">
+    <tr>
+        <td>{{ pokedex.id }}. </td>
+        <td>{{ pokedex.pokedex_id }}. </td>
+        <td>{{ pokedex.species }}</td>
+        <td>{{ pokedex.base_id_1 }}</td>
+        <td>{{ pokedex.base_id_2 }}</td>
+        <td>{{ pokedex.type_1 }}</td>
+        <td>{{ pokedex.type_2 }}</td> 
+    </tr>  
+</table>
+
+<div class="shadow p-3 mb-5 bg-body-tertiary rounded">
+    <form method="POST" action="/admin/pokedex/fusion">
+        {{ form.hidden_tag() }}
+        {{ form.id.label(class="form-label") }}
+        {{ form.id(class="form-control", placeholder="Type 1") }}
+        <br>
+        <button type="submit" class="btn btn-primary">Submit</button>
+      </form>
+</div>
+
+<table class="table table-hover table-bordered table-striped">
+    <tr>
+        <td>{{ pokedex_check.id }} </td>
+        <td>{{ pokedex_check.pokedex_id }} </td>
+        <td>{{ pokedex_check.species }}</td>
+        <td>{{ pokedex_check.base_id_1 }}</td>
+        <td>{{ pokedex_check.base_id_2 }}</td>
+        <td>{{ pokedex_check.type_1 }}</td>
+        <td>{{ pokedex_check.type_2 }}</td> 
+    </tr>  
+</table>
+{% endblock %}
