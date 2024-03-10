@@ -149,6 +149,13 @@ def session_manager(session_num):
     
     # Get party length
     party_length = Pokemon.query.filter_by(player_id=players[0].id, position='party').count()
+
+    width_numbers = []
+    width_numbers.append(int(12 / players.count()))
+    if width_numbers[0] < 6:
+        width_numbers.append(12)
+    else:
+        width_numbers.append(6)
     
     # Evolutions
     full_evolution_list = []
@@ -175,5 +182,6 @@ def session_manager(session_num):
                            session_num=session_num, 
                            session=session, 
                            full_evolution_list=full_evolution_list,  
-                           party_length=party_length)
+                           party_length=party_length,
+                           width_numbers=width_numbers)
             

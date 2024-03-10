@@ -19,20 +19,16 @@ def dex_check(dex_num):
     try:
         float(dex_num)
     except ValueError:
-        print("NOT A NUMBER")
         return False
     if not Pokedex.query.filter_by(number=dex_num).first():
-        print("NOT A VALID EVOLUTION")
         return False
     return True
 
 def evolution_check(evolution_id, base_id):
     # Check if entered pokemon is part of same family
     if Pokedex.query.filter_by(number=evolution_id).first().family == Pokedex.query.filter_by(number=base_id).first().family:
-        print("VALID EVOLUTION")
         return True
     else:
-        print("Not Valid Evolution")
         return False
     
 # def delete_all_pokemon_by_player(player_id):

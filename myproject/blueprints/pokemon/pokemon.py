@@ -5,6 +5,8 @@ from ...models import Users, Sessions, Players, Pokemon, Pokedex, PokedexBase
 # from ...webforms import 
 from ...helpers import dex_check, fusion_check, evolution_check
 
+import random
+
 pokemon = Blueprint('pokemon', __name__, template_folder='templates')
 
 # Add Pokemon to Session route
@@ -21,7 +23,7 @@ def add_pokemon():
         link_id = last_pokemon.link_id + 1
     else:
         link_id = 1
-
+    # ADD SERVER SIDE CHECKS HERE
     # Adds new pokemon
     for key, value in request.form.items():
         # Get Pokedex_Id
@@ -32,6 +34,30 @@ def add_pokemon():
         player_id = Players.query.join(Sessions).filter(Sessions.id==current_session.id).filter(Players.number==key).first().id
         # Add pokemon to DB
         pokemon = Pokemon(player_id=player_id, pokedex_number=pokemon_to_add.number, sprite=pokemon_to_add.number, link_id=link_id, position='box')
+        db.session.add(pokemon)
+        db.session.commit()
+
+    # Returns user to 
+    return redirect(url_for('main.view_session'))
+
+@pokemon.route('/add/random', methods=['POST'])
+@login_required
+def add_random():
+    # Set variables
+    id = current_user.id
+    current_session = Sessions.query.get(Users.query.get_or_404(id).current_session)
+
+    # Get new link_id
+    last_pokemon = Pokemon.query.join(Players).join(Sessions).filter(Sessions.id==current_session.id).filter(Players.number==1).order_by(Pokemon.link_id.desc()).first()
+    if last_pokemon:
+        link_id = last_pokemon.link_id + 1
+    else:
+        link_id = 1
+    # ADD SERVER SIDE CHECKS HERE
+    # Adds new pokemon
+    for player in current_session.players:
+        random_pokemon = random.randrange(1, 450)
+        pokemon = Pokemon(player_id=player.id, pokedex_number=random_pokemon, sprite=random_pokemon, link_id=link_id, position='box')
         db.session.add(pokemon)
         db.session.commit()
 

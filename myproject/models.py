@@ -37,6 +37,7 @@ class Pokemon(db.Model):
     link_id = db.Column(db.Integer)
     route = db.Column(db.String(50))
     position = db.Column(db.String(5), nullable=False)
+    # ForeignKeyConstraint(['pokedex_number','sprite'], ['pokedex.number','artists.sprite'])
 
 # Create Base Pokedex Model
 class PokedexBase(db.Model):

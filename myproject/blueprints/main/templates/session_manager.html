@@ -21,6 +21,9 @@
                 {% endfor %}
                 <button class="btn btn-primary" tabindex="2">Add Pokemon to Session</button>
             </form>
+            <form action="{{ url_for('pokemon.add_random') }}" method="post">
+                <button class="btn btn-primary" tabindex="3">Add Random Pokemon</button>
+            </form>
         </div>
         <!-- Fuse Pokemon -->
         <div class="col-md-8 text-center">
@@ -28,7 +31,7 @@
             <form action="{{ url_for('pokemon.fuse_pokemon')}}" method="post">
                 <div class="row">
                     {% for player in session.players %}
-                        <div class="col-md-6">
+                        <div class="col-md-{{ width_numbers[0] }}">
                             <h3>{{ player.name }}</h3>
                             {% for part in ["Head", "Body"] %}
                                 <div>
@@ -47,7 +50,7 @@
                     {% endfor %}
                 </div>
                 <div class="row">
-                    <div class="col-md-6 text-center">
+                    <div class="col-md-6 center">
                         <button class="btn btn-primary">Fuse Pokemon</button>
                     </div>
                 </div>
@@ -60,16 +63,16 @@
 <div class="container-fluid">
     <div class="row"> 
         <!-- Party Column -->
-        <div class="col-lg-6">
+        <div class="col-lg-{{ width_numbers[1] }} shadow p-3 mb-3 bg-body-tertiary rounded">
             <h2 style="text-align:center">Party</h2>
             <div class="row">
                 {% for player, player_evo_list in zip(session.players, full_evolution_list) %}
                     <!-- Player Column -->
-                    <div class="col-lg-6">
+                    <div class="col-lg-{{ width_numbers[0] }}">
                         <h2 style="text-align:center">{{ player.name }}</h2>
                         {% for mon, evo_list in zip(player.pokemon, player_evo_list) %}
-                            <div class="row">
-                                {% if mon.position == "party" %}
+                            {% if mon.position == "party" %}
+                                <div class="row shadow p-3 mb-1 bg-body-tertiary rounded">
                                     <!-- Left Side -->
                                     <div class="col-md-6">
                                         <div style="text-align:center">{{ mon.info.species }} - {{ mon.pokedex_number }}</div>
@@ -137,27 +140,27 @@
                                             </form>
                                         </div>
                                     </div>
-                                {% endif %}
-                            </div>
+                                </div>
+                            {% endif %}
                         {% endfor %}  
                     </div>
                 {% endfor %}
             </div>
         </div>
         <!-- Box Column -->
-        <div class="col-md-6" style="max-width:800px">
+        <div class="col-md-{{ width_numbers[1] }} shadow p-3 mb-3 bg-body-tertiary rounded">
             <h2 style="text-align:center">Box</h2>
             <div class="row">
                 {% for player, player_evo_list in zip(session.players, full_evolution_list) %}
                     <!-- Player Column -->
-                    <div class="col-md-6" style="max-width:400px">
+                    <div class="col-md-{{ width_numbers[0] }}">
                         <h2 style="text-align:center">{{ player.name }}</h2>
                         {% for mon, evo_list in zip(player.pokemon, player_evo_list) %}
-                            <div class="row">
-                                {% if mon.position == "box" %}
+                            {% if mon.position == "box" %}
+                                <div class="row shadow p-3 mb-1 bg-body-tertiary rounded">
                                     <!-- Left Side -->
-                                    <div class="col-md-6" style="max-width:200px">
-                                        <div>{{ mon.info.species }} - {{ mon.pokedex_number }}</div>
+                                    <div class="col-md-6">
+                                        <div style="text-align:center;">{{ mon.info.species }} - {{ mon.pokedex_number }}</div>
                                         <!-- Type -->
                                         <div>
                                             {{ mon.info.type_primary }}
@@ -224,8 +227,8 @@
                                             </form>
                                         </div>
                                     </div>
-                                {% endif %}
-                            </div>
+                                </div>
+                            {% endif %}
                         {% endfor %}  
                     </div>
                 {% endfor %}
@@ -237,12 +240,12 @@
 <div class="container-fluid">
     <div class="row"> 
         <!-- Party Column -->
-        <div class="col-lg-6">
+        <div class="col-lg-{{ width_numbers[1] }}">
             <h2 style="text-align:center">Graveyard</h2>
             <div class="row">
                 {% for player, player_evo_list in zip(session.players, full_evolution_list) %}
                     <!-- Player Column -->
-                    <div class="col-lg-6">
+                    <div class="col-lg-{{ width_numbers[0] }}">
                         <h2 style="text-align:center">{{ player.name }}</h2>
                         {% for mon, evo_list in zip(player.pokemon, player_evo_list) %}
                             <div class="row">

@@ -9,21 +9,33 @@
 {% endblock %}
 
 {% block main %}
+<div>
     {% for session in sessions %}
-        Session Id: {{ session.id }}
-        <br>
-        Session User: {{ session.user_id }}
-        <br>
-        Session Number: {{ session.number }}
-        <br>
-        {% for player in session.players %}
-            Player {{ player.player_num }}: {{ player.name }}
+        <div class="shadow p-3 mb-5 bg-body-tertiary rounded">
+            <h2>Session {{ session.number }}</h2>
             <br>
-        {% endfor %}
-        <form action="{{ url_for('main.select_session')}}" method="POST">
-            <button class="btn btn-primary" name="{{ session.number }}">Select</button>
-        </form>
-        <a href="{{ url_for('main.delete_session', session_number=session.number) }}" class="btn btn-danger">Delete</a>
+            {% for player in session.players %}
+                <div>
+                    <h4>Player {{ player.number }}: {{ player.name }}</h4>
+                    <br>
+                    {% for pokemon in player.pokemon %}
+                        {% if pokemon.position == "party" %}
+                            <img src="{{ url_for('main.static', filename='images/sprites/' ~ pokemon.info.base_id_1 ~ '/' ~ pokemon.sprite ~ '.png') }}" onerror="this.onerror=null; this.src='/main/static/images/sprites/default/default.png'" width="100" height="100">
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                <br>
+            {% endfor %}
+            <div>
+                <form action="{{ url_for('main.select_session')}}" method="POST">
+                    <button class="btn btn-primary" name="{{ session.number }}">Select</button>
+                </form>
+                <a href="{{ url_for('main.delete_session', session_number=session.number) }}" class="btn btn-danger">Delete</a>
+            </div>
+        </div>
+        
         <br/><br/>
     {% endfor %}
+</div>
+    
 {% endblock %}
