@@ -16,17 +16,13 @@ def fusion_check(heads, bodys):
 #     db.session.commit()
 
 def dex_check(dex_num):
-    try:
-        float(dex_num)
-    except ValueError:
-        return False
-    if not Pokedex.query.filter_by(number=dex_num).first():
+    if not Pokedex.query.filter(Pokedex.number==dex_num).first():
         return False
     return True
 
 def evolution_check(evolution_id, base_id):
     # Check if entered pokemon is part of same family
-    if Pokedex.query.filter_by(number=evolution_id).first().family == Pokedex.query.filter_by(number=base_id).first().family:
+    if Pokedex.query.filter(Pokedex.number==evolution_id).first().family == Pokedex.query.filter(Pokedex.number==base_id).first().family:
         return True
     else:
         return False
