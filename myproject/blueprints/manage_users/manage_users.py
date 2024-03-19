@@ -76,8 +76,6 @@ def register():
 @login_required
 def delete_user(id):
     user_to_delete = Users.query.get_or_404(id)
-    sessions_to_delete = Sessions.query.filter_by(user_id=id)
-    players_to_delete = Players.query.filter_by()
     try:
         db.session.delete(user_to_delete)
         db.session.commit()

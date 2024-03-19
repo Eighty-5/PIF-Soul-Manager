@@ -1,67 +1,115 @@
+from collections import Counter
+from ...extensions import db
 from flask import Blueprint, request, flash, redirect, url_for
 from flask_login import login_required, current_user
-from ...extensions import db
 from ...models import Users, Sessions, Players, Pokemon, Pokedex, PokedexBase
-# from ...webforms import 
-from ...helpers import dex_check, fusion_check, evolution_check
+from .pokemon_utils import add_pokemon_per_ruleset_group, create_fusion_pokemon, dex_check, evolution_check, get_new_link_id, remove_route_key    
+from sqlalchemy import or_
+from ...utils import get_default_vars
 
 import random
 
 pokemon = Blueprint('pokemon', __name__, template_folder='templates')
 
+MANUAL_RULESET = 1
+AUTO_RULESET = [2, 3]
+ROUTE_RULESET = 4
+SPECIAL_RULESET = 5
 # Add Pokemon to Session route
+
+
 @pokemon.route('/add', methods=['POST'])
 @login_required
 def add_pokemon():
-    # Set variables
-    id = current_user.id
-    current_session = Sessions.query.get(Users.query.get_or_404(id).current_session)
-
-    # Get new link_id
-    last_pokemon = Pokemon.query.join(Players).join(Sessions).filter(Sessions.id==current_session.id).filter(Players.number==1).order_by(Pokemon.link_id.desc()).first()
-    if last_pokemon:
-        link_id = last_pokemon.link_id + 1
-    else:
-        link_id = 1
+    current_session, current_session_id, ruleset = get_default_vars(current_user.id)
     # ADD SERVER SIDE CHECKS HERE
-    # Adds new pokemon
-    for key, value in request.form.items():
-        # Get Pokedex_Id
-        pokedex_number = PokedexBase.query.filter_by(species=value).first().number
-        # Query Pokedex for pokemon info
-        pokemon_to_add = Pokedex.query.filter_by(number=pokedex_number).first()
-        # Get Player ID
-        player_id = Players.query.join(Sessions).filter(Sessions.id==current_session.id).filter(Players.number==key).first().id
-        # Add pokemon to DB
-        pokemon = Pokemon(player_id=player_id, pokedex_number=pokemon_to_add.number, sprite=pokemon_to_add.number, link_id=link_id, position='box')
-        db.session.add(pokemon)
-        db.session.commit()
 
-    # Returns user to 
+    if ruleset != MANUAL_RULESET:
+        try:
+            route = request.form['route']
+            max_num = 1 if ruleset == 2 else 2
+            if not Pokemon.query.join(Sessions.players).join(Players.pokemon).filter(
+                    Sessions.id == current_session_id).filter(Pokemon.route == route).count() < max_num * len(current_session.players):
+                flash("Maximum Pokemon caught for that route. Please choose another")
+                return redirect(url_for('main.view_session'))
+        except KeyError:
+            flash("No route selected")
+            return redirect(url_for('main.view_session'))
+    pokemon_to_add_dict = {}
+    for key, value in request.form.items():
+        if key != 'route': pokemon_to_add_dict[key] = value 
+    if ruleset == MANUAL_RULESET:
+        added_pokemon_lst = []
+        for player_num in pokemon_to_add_dict:
+            species = pokemon_to_add_dict[player_num]
+            link_id = get_new_link_id(current_session.id)
+            add_pokemon_per_ruleset_group(
+                'manual', player_num, species, link_id, None, current_session_id)
+            added_pokemon_lst.append(species)
+        flash(f"{', '.join(added_pokemon_lst)} were added to the session!")
+        db.session.commit()
+    elif ruleset in AUTO_RULESET:
+        link_id = get_new_link_id(current_session.id)
+        added_pokemon_lst = []
+        for player_num in pokemon_to_add_dict:
+            species = pokemon_to_add_dict[player_num]
+            add_pokemon_per_ruleset_group(
+                'auto', player_num, species, link_id, route, current_session_id)
+            added_pokemon_lst.append(species)
+        flash(f"{', '.join(added_pokemon_lst)} were added to the session!")
+        db.session.commit()
+    elif ruleset in [ROUTE_RULESET, SPECIAL_RULESET]:
+        added_pokemon_lst = []
+        for player_num in pokemon_to_add_dict:
+            species = pokemon_to_add_dict[player_num]
+            add_pokemon_per_ruleset_group(
+                'route', player_num, species, 'temp', route, current_session_id)
+            added_pokemon_lst.append(species)
+        flash(f"{', '.join(added_pokemon_lst)} were added to the session!")
+        db.session.commit()
+    else:
+        flash("""NOT VIABLE RULESET: PLEASE USE DESIGNATED 
+              RULESET OR RECREATE SESSION WITH FULL FREEDOM RULESET""")
     return redirect(url_for('main.view_session'))
+
 
 @pokemon.route('/add/random', methods=['POST'])
 @login_required
 def add_random():
-    # Set variables
-    id = current_user.id
-    current_session = Sessions.query.get(Users.query.get_or_404(id).current_session)
-
-    # Get new link_id
-    last_pokemon = Pokemon.query.join(Players).join(Sessions).filter(Sessions.id==current_session.id).filter(Players.number==1).order_by(Pokemon.link_id.desc()).first()
-    if last_pokemon:
-        link_id = last_pokemon.link_id + 1
+    current_session, current_session_id, ruleset = get_default_vars(current_user.id)
+    link_id = get_new_link_id(current_session.id)
+    taken_routes = [r.route for r in Pokemon.query.join(Sessions.players).join(Players.pokemon).filter(Sessions.id == current_session_id, Players.number == 1)]
+    rand_route = random.randrange(1, 100)
+    if ruleset == 2:
+        while taken_routes.count(rand_route) >= 1:
+            rand_route = random.randrange(1, 100)
     else:
-        link_id = 1
+        while taken_routes.count(rand_route) >= 2:
+            rand_route = random.randrange(1, 100)
     # ADD SERVER SIDE CHECKS HERE
-    # Adds new pokemon
+    added_pokemon_lst = []
     for player in current_session.players:
-        random_pokemon = random.randrange(1, 450)
-        pokemon = Pokemon(player_id=player.id, pokedex_number=random_pokemon, sprite=random_pokemon, link_id=link_id, position='box')
-        db.session.add(pokemon)
-        db.session.commit()
+        if ruleset == MANUAL_RULESET:
+            link_id, linked, rand_route = get_new_link_id(current_session_id), False, None
+        elif ruleset in AUTO_RULESET:
+            linked = True
+        elif ruleset in [ROUTE_RULESET, SPECIAL_RULESET]:
+            link_id, linked = get_new_link_id(current_session_id), False
+        rand_pokedex_number = random.randrange(1, PokedexBase.query.count())
 
-    # Returns user to 
+        pokemon = Pokemon(
+            player_id=player.id,
+            pokedex_number=rand_pokedex_number,
+            sprite=rand_pokedex_number,
+            link_id=link_id,
+            linked=linked,
+            route=rand_route,
+            position='box')
+        db.session.add(pokemon)
+        added_pokemon_lst.append(rand_pokedex_number)
+    added_pokemon_lst = [PokedexBase.query.filter(PokedexBase.number == i).first().species for i in added_pokemon_lst]
+    db.session.commit()
+    flash(f"{', '.join(added_pokemon_lst)} were added to the session! ")
     return redirect(url_for('main.view_session'))
 
 
@@ -69,12 +117,14 @@ def add_random():
 @pokemon.route('/variant/<player_num>/<link_id>', methods=['POST'])
 @login_required
 def change_variant(player_num, link_id):
-    id = current_user.id
-    current_session = Users.query.get_or_404(id).current_session
+    current_session, current_session_id, ruleset = get_default_vars(current_user.id)
     variant = request.form.get("variant_select")
     if variant == 'default':
         variant = ''
-    variant_to_change = Pokemon.query.join(Players).join(Sessions).filter(Sessions.id==current_session).filter(Players.number==player_num).filter(Pokemon.link_id==link_id).first()
+    variant_to_change = Pokemon.query.join(Players).join(Sessions).filter(
+        Sessions.id == current_session_id).filter(
+        Players.number == player_num).filter(
+            Pokemon.link_id == link_id).first()
     variant_to_change.sprite = variant_to_change.pokedex_number + variant
     db.session.commit()
     return redirect(url_for('main.view_session'))
@@ -84,56 +134,55 @@ def change_variant(player_num, link_id):
 @pokemon.route('/fuse', methods=['POST'])
 @login_required
 def fuse_pokemon():
-    # Set variables
-    id = current_user.id
-    current_session = Sessions.query.get(Users.query.get_or_404(id).current_session)
-    heads = []
-    bodys = []
+    current_session, current_session_id, ruleset = get_default_vars(current_user.id)
+    head_link_ids, body_link_ids = [], []
+    
     for key, value in request.form.items():
-        if value != None:
+        if value is not None:
             if 'Head' in key:
-                heads.append(value)
+                head_link_ids.append(value)
             elif 'Body' in key:
-                bodys.append(value)
+                body_link_ids.append(value)
+            else:
+                flash("Error")
+                return redirect(url_for('main.view_session'))
 
-    # Check if all 'head' link_ids are the same (as well as the 'body')
-    player_count = len(Sessions.query.get(Users.query.get(id).current_session).players)
-    if len(heads) != player_count or len(bodys) != player_count:
+    player_count = len(current_session.players)
+    if len(head_link_ids) != player_count or len(body_link_ids) != player_count:
         flash("Ensure head and body is selected for each player")
         return redirect(url_for('main.view_session'))
-    elif not fusion_check(heads, bodys):
-        flash("Heads/bodies do not match")
+    elif any(count > player_count for count in Counter(head_link_ids + body_link_ids).values()):
+        print(head_link_ids + body_link_ids)
+        flash("Fusion Failed: A Pokemon was used multiple times in one fusion")
         return redirect(url_for('main.view_session'))
-
-    # Get new link_id
-    last_pokemon = Pokemon.query.join(Players).join(Sessions).filter(Sessions.id==current_session.id).filter(Players.number==1).order_by(Pokemon.link_id.desc()).first()
-    if last_pokemon:
-        link_id = last_pokemon.link_id + 1
+    
+    new_link_id = get_new_link_id(current_session_id)
+    if ruleset == ROUTE_RULESET:
+        head_routes = [r.route for r in Pokemon.query.join(Sessions.players).join(Players.pokemon).filter(Sessions.id == current_session.id, Pokemon.link_id.in_(head_link_ids))]
+        body_routes = [r.route for r in Pokemon.query.join(Sessions.players).join(Players.pokemon).filter(Sessions.id == current_session.id, Pokemon.link_id.in_(body_link_ids))]
+        if all(i == head_routes[0] for i in head_routes) and all(
+                i == head_routes[0] for i in body_routes):
+            create_fusion_pokemon(new_link_id, head_link_ids, body_link_ids, ruleset, current_session_id)
+        else:
+            flash("not valid fusions")
+    elif ruleset == SPECIAL_RULESET:
+        players_routes = []
+        for head, body in zip(head_link_ids, body_link_ids):
+            players_routes.append(sorted([r.route for r in Pokemon.query.join(Sessions.players).join(Players.pokemon).filter(Sessions.id == current_session_id, or_(Pokemon.link_id == head, Pokemon.link_id == body))]))
+        if all(i == players_routes[0] for i in players_routes):
+            create_fusion_pokemon(new_link_id, head_link_ids, body_link_ids, ruleset, current_session_id)
+        else:
+            flash("not valid fusions")
+    elif ruleset in AUTO_RULESET:
+        players_link_ids = []
+        for head, body in zip(head_link_ids, body_link_ids):
+            players_link_ids.append(sorted([head, body]))
+        if all(i == players_link_ids[0] for i in players_link_ids):
+            create_fusion_pokemon(new_link_id, head_link_ids, body_link_ids, ruleset, current_session_id)
+        else:
+            flash("not valid fusions")
     else:
-        link_id = 1
-
-    # Fuse Pokemon
-    for head, body, player in zip(heads, bodys, Players.query.filter_by(session_id=Sessions.query.get(Users.query.get(id).current_session).id)):
-        # Get Head pokemon pokedex id for player
-        head_pokemon = Pokemon.query.filter_by(link_id=head, player_id=player.id).first()
-        # Get Body pokemon pokedex id for player
-        body_pokemon = Pokemon.query.filter_by(link_id=body, player_id=player.id).first()
-        # Combine both id's to make fused id
-        fused_pokemon_id = f"{head_pokemon.info.number}.{body_pokemon.info.number}"
-        # Get pokemon info based on fused id
-        fused_pokemon = Pokedex.query.filter_by(number=fused_pokemon_id).first()
-        # Add new Pokemon to DB
-        pokemon_to_add = Pokemon(player_id=player.id, pokedex_number=fused_pokemon.number, sprite=fused_pokemon.number, link_id=link_id, position='box')
-        db.session.add(pokemon_to_add)
-        db.session.commit()
-
-        # Delete the base pokemon from DB as they are now fused together
-        db.session.delete(head_pokemon)
-        db.session.commit()
-        db.session.delete(body_pokemon)
-        db.session.commit()        
-
-    # Return to current session manager
+        create_fusion_pokemon(new_link_id, head_link_ids, body_link_ids, ruleset, current_session_id)
     return redirect(url_for('main.view_session'))
 
 
@@ -142,29 +191,31 @@ def fuse_pokemon():
 @login_required
 def delete_pokemon(link_id):
     id = current_user.id
-    current_session = Users.query.get_or_404(id).current_session
-    for player in Sessions.query.get(current_session).players:
-        for pokemon_to_delete in Pokemon.query.filter(Pokemon.link_id==link_id, Pokemon.player_id==player.id):
-            db.session.delete(pokemon_to_delete)
-            db.session.commit()
-    # pokemon_to_delete = Pokemon.query.join(Players).join(Sessions).filter(Sessions.id==current_session).filter(Pokemon.link_id==link_id)
-    # print(pokemon_to_delete)
-    # db.session.delete(pokemon_to_delete)
-    # db.session.commit()
+    current_session, current_session_id, ruleset = get_default_vars(current_user.id)
+    pokemon_to_delete = Pokemon.query.join(Sessions.players).join(Players.pokemon).filter(Sessions.id==current_session_id).filter(Pokemon.link_id==link_id)
+    deleted_pokemon = []
+    for pokemon in pokemon_to_delete:
+        deleted_pokemon.append(pokemon.info.species)
+        db.session.delete(pokemon)
+    db.session.commit()
+    flash(f"{', '.join(deleted_pokemon)} deleted from session")
     if id == 1:
-        return redirect(url_for('admin.pokemon'))
+        return redirect(url_for('admin.admin_pokemon'))
     else:
         return redirect(url_for('main.view_session'))
 
 
-@pokemon.route('/evolve/<int:player_num>/<int:link_id>', methods=['GET', 'POST'])
+@pokemon.route('/evolve/<int:player_num>/<int:link_id>', methods=['POST'])
 @login_required
 def evolve_pokemon(player_num, link_id):
     id = current_user.id
-    current_session = Users.query.get_or_404(id).current_session
+    current_session, current_session_id, ruleset = get_default_vars(current_user.id)
     # Check if evolution is a valid evolution
     evolution = request.form.get(f"evolve_{str(player_num)}_{str(link_id)}")
-    pokemon_to_evolve = Pokemon.query.join(Players).join(Sessions).filter(Sessions.id==current_session).filter(Players.number==player_num).filter(Pokemon.link_id==link_id).first()
+    pokemon_to_evolve = Pokemon.query.join(Players).join(Sessions).filter(
+        Sessions.id == current_session_id).filter(
+        Players.number == player_num).filter(
+            Pokemon.link_id == link_id).first()
     base_id = pokemon_to_evolve.pokedex_number
     prevolution = pokemon_to_evolve.info.species
     if dex_check(evolution) and evolution_check(evolution, base_id):
@@ -181,97 +232,180 @@ def evolve_pokemon(player_num, link_id):
 @pokemon.route('/switch/party/<link_id>', methods=['POST'])
 @login_required
 def switch_party(link_id):
-    # Serverside check ensuring link_id is a digit
     if not link_id.isdigit():
         flash("Not a valid Pokemon")
         return redirect(url_for('main.view_session'))
     id = current_user.id
-    current_session = Users.query.get_or_404(id).current_session
-    # Send requested pokemon souls to box
+    current_session, current_session_id, ruleset = get_default_vars(current_user.id)
     for key, value in request.form.items():
-        # Serverside check that targeted party pokemon link_id was not changed to a non digit
-        # Changed to a digit that is not a valid link_id is okay as query will come up none anyway
         if value.isdigit():
-            # If serverside check is true, query db for pokemon and add to box
-            pokemon_to_box = Pokemon.query.join(Players).join(Sessions).join(Users).filter(Users.id==id).filter(Sessions.id==current_session).filter(Pokemon.link_id==value)
+            pokemon_to_box = Pokemon.query.join(Sessions.players).join(Players.pokemon).filter(Sessions.id == current_session_id, Pokemon.link_id == value)
             for pokemon in pokemon_to_box:
                 pokemon.position = 'box'
-                db.session.commit()
-    # Serverside check if party is not full 
-    if Pokemon.query.join(Players).join(Sessions).filter(Sessions.user_id==id).filter(Sessions.id==current_session).filter(Players.number==1).filter(Pokemon.position=='party').count() < 6:
-        pokemon_to_party = Pokemon.query.join(Players).join(Sessions).join(Users).filter(Users.id==id).filter(Sessions.id==current_session).filter(Pokemon.link_id==link_id)
-        # Add pokemon to box
-        for pokemon in pokemon_to_party:
+    pokemon_to_party = Pokemon.query.join(Sessions.players).join(Players.pokemon).filter(Sessions.id == current_session_id, Pokemon.link_id == link_id)
+    for pokemon in pokemon_to_party:
+
+        if Pokemon.query.filter(Pokemon.player_id == pokemon.player_id, Pokemon.position == "party").count() >= 6:
+            flash("Party is full or pokemon is soul-linked to another pokemon whose Player party is full")
+            return redirect(url_for('main.view_session'))
+        else:
             pokemon.position = 'party'
-            db.session.commit()
-    else:
-        flash("Party is Full")
-    
+    db.session.commit()
     return redirect(url_for('main.view_session'))
 
 
 @pokemon.route('/switch/box/<link_id>', methods=['POST'])
 @login_required
 def switch_box(link_id):
-    # Serverside check ensuring link_id is a digit
     if not link_id.isdigit():
         flash("Not a valid Pokemon")
         return redirect(url_for('main.view_session'))
     id = current_user.id
-    current_session = Users.query.get_or_404(id).current_session
-    # Send requested pokemon souls to box
-    pokemon_to_box = Pokemon.query.join(Players).join(Sessions).join(Users).filter(Users.id==id).filter(Sessions.id==current_session).filter(Pokemon.link_id==link_id)
+    current_session, current_session_id, ruleset = get_default_vars(current_user.id)
+    pokemon_to_box = Pokemon.query.join(Players).join(Sessions).join(Users).filter(
+        Users.id == id).filter(
+        Sessions.id == current_session_id).filter(
+            Pokemon.link_id == link_id)
     for pokemon in pokemon_to_box:
         pokemon.position = 'box'
-        db.session.commit()
-    # Serverside check if party is not full 
-    if Pokemon.query.join(Players).join(Sessions).filter(Sessions.user_id==id).filter(Sessions.id==current_session).filter(Players.number==1).filter(Pokemon.position=='party').count() < 6:
-        for key, value in request.form.items():
-            # Serverside check that targeted party pokemon link_id was not changed to a non digit
-            # Changed to a digit that is not a valid link_id is okay as query will come up none anyway
-            if value.isdigit():
-                # If serverside check is true, query db for pokemon and add to box
-                pokemon_to_party = Pokemon.query.join(Players).join(Sessions).join(Users).filter(Users.id==id).filter(Sessions.id==current_session).filter(Pokemon.link_id==value)
-                for pokemon in pokemon_to_party:
+    for key, value in request.form.items():
+        if value.isdigit():
+            pokemon_to_party = Pokemon.query.join(Players).join(Sessions).join(Users).filter(
+                Users.id == id).filter(
+                Sessions.id == current_session_id).filter(
+                Pokemon.link_id == value)
+            for pokemon in pokemon_to_party:
+                if Pokemon.query.filter(Pokemon.player_id == pokemon.player_id, Pokemon.position == "party").count() >= 6:
+                    flash("Pokemon in box is linked with another pokemon whose Player party is full")
+                    return redirect(url_for('main.view_session'))
+                else:
                     pokemon.position = 'party'
-                    db.session.commit()
-    else:
-        flash("Party is Full")
-    
+    db.session.commit()
     return redirect(url_for('main.view_session'))
 
 
 @pokemon.route('/switch/dead/<link_id>', methods=['POST'])
 @login_required
 def switch_dead(link_id):
-    # Serverside check ensuring link_id is a digit
     if not link_id.isdigit():
         flash("Not a valid Pokemon")
         return redirect(url_for('main.view_session'))
     id = current_user.id
-    current_session = Users.query.get_or_404(id).current_session
-    # Send requested pokemon souls to box
-    pokemon_to_dead = Pokemon.query.join(Players).join(Sessions).join(Users).filter(Users.id==id).filter(Sessions.id==current_session).filter(Pokemon.link_id==link_id)
+    current_session, current_session_id, ruleset = get_default_vars(current_user.id)
+    pokemon_to_dead = Pokemon.query.join(Players).join(Sessions).join(Users).filter(
+        Users.id == id).filter(
+        Sessions.id == current_session_id).filter(
+            Pokemon.link_id == link_id)
     for pokemon in pokemon_to_dead:
         pokemon.position = 'dead'
         db.session.commit()
-    
     return redirect(url_for('main.view_session'))
 
 
 @pokemon.route('/switch/revive/<link_id>', methods=['POST'])
 @login_required
 def switch_revive(link_id):
-    # Serverside check ensuring link_id is a digit
     if not link_id.isdigit():
         flash("Not a valid Pokemon")
         return redirect(url_for('main.view_session'))
     id = current_user.id
-    current_session = Users.query.get_or_404(id).current_session
-    # Send requested pokemon souls to box
-    pokemon_to_box = Pokemon.query.join(Players).join(Sessions).join(Users).filter(Users.id==id).filter(Sessions.id==current_session).filter(Pokemon.link_id==link_id)
+    current_session, current_session_id, ruleset = get_default_vars(current_user.id)
+    pokemon_to_box = Pokemon.query.join(Players).join(Sessions).join(Users).filter(
+        Users.id == id).filter(
+        Sessions.id == current_session_id).filter(
+            Pokemon.link_id == link_id)
     for pokemon in pokemon_to_box:
         pokemon.position = 'box'
         db.session.commit()
 
     return redirect(url_for('main.view_session'))
+
+
+# BUG TESTING REQUIRED
+@pokemon.route('/link/<link_id_1>', methods=['POST'])
+@login_required
+def link_pokemon(link_id_1):
+    current_session, current_session_id, ruleset = get_default_vars(current_user.id)
+    if ruleset != MANUAL_RULESET:
+        flash("Cannot perform manual link for current ruleset!")
+        return redirect(url_for('main.view_session'))
+    for key, value in request.form.items():
+        link_id_2 = int(value)
+    pokemon_1 = Pokemon.query.join(
+        Sessions.players).join(
+        Players.pokemon).filter(
+            Pokemon.link_id == int(link_id_1),
+        Sessions.id == current_session_id)
+    pokemon_2 = Pokemon.query.join(
+        Sessions.players).join(
+        Players.pokemon).filter(
+            Pokemon.link_id == link_id_2,
+        Sessions.id == current_session_id)
+    print(pokemon_2.first().position)
+    if pokemon_1.count() == 0 or pokemon_2.count() == 0:
+        flash(f"ERROR: Manual Link Failed - One or Two pokemon missing")
+    elif pokemon_1.count() > 1:
+        pokemon_names = [pokemon.info.species for pokemon in pokemon_1]
+        flash(f"ERROR: Manual Link Failed - {', '.join(pokemon_names)
+                                             } are already linked together, please unlink one first.")
+    elif pokemon_2.filter(Pokemon.player_id == pokemon_1.first().player_id).first():
+        if pokemon_2.count() == 1:
+            flash(
+                f"ERROR: Manual Link Failed - {
+                    pokemon_1.first().info.species} and {
+                    pokemon_2.first().info.species} belong to the same player")
+        else:
+            for pokemon in pokemon_2:
+                pokemon_names = [pokemon.info.species for pokemon in pokemon_2]
+            flash(
+                f"ERROR: Manual Link Failed - Player already has a pokemon linked to {
+                    ', '.join(pokemon_names)}. Please unlink {
+                    pokemon_2.filter(
+                        Pokemon.player_id == pokemon_1.first().player_id).first().info.species} first")
+    else:
+        pokemon_1 = pokemon_1.first()
+        flash(f"Manual Link Successful - {pokemon_1.info.species} successfully linked to {
+              ', '.join([pokemon.info.species for pokemon in pokemon_2])}!")
+        if pokemon_2.first().position == 'box' and pokemon_1.position == 'party': 
+            pokemon_1.position = 'box'
+        pokemon_1.link_id, pokemon_1.linked, pokemon_1.position = link_id_2, True, 'box'
+        for pokemon in pokemon_2: 
+            pokemon.linked, pokemon.position = True, 'box'
+        db.session.commit()
+    if current_user.id == 1:
+        return redirect(url_for('admin.admin_pokemon'))
+    else:
+        return redirect(url_for('main.view_session'))
+
+
+@pokemon.route('/unlink/<player_num>/<link_id>', methods=['GET', 'POST'])
+@login_required
+def unlink_pokemon(player_num, link_id):
+    current_session, current_session_id, ruleset = get_default_vars(current_user.id)
+    # pokemon_to_unlink = Pokemon.query.join(Sessions.players).join(Players.pokemon).filter(Pokemon.link_id==link_id, Sessions.id==current_session_id, Players.number==player_num)
+    pokemon_linked = Pokemon.query.join(
+        Sessions.players).join(
+        Players.pokemon).filter(
+            Pokemon.link_id == link_id,
+        Sessions.id == current_session_id)
+    if pokemon_linked.count() == 0:
+        flash(f"ERROR: Unlink Failed - Please select a valid pokemon")
+    elif pokemon_linked.count() == 1:
+        flash(f"ERROR: Unlink Failed - {
+            pokemon_to_unlink.info.species} is not currently linked to another pokemon")
+    else:
+        pokemon_to_unlink = pokemon_linked.filter(
+            Players.number == player_num).first()
+        flash(
+            f"Manual Link Successful - {pokemon_to_unlink.info.species} successfully unlinked!")
+        pokemon_to_unlink.link_id = get_new_link_id(current_session_id)
+        pokemon_to_unlink.linked = False
+        db.session.commit()
+        extra_unlink = Pokemon.query.join(Sessions.players).join(Players.pokemon).filter(Pokemon.link_id == link_id, Sessions.id == current_session_id)
+        if len(extra_unlink.all()) == 1:
+            extra_unlink.first().linked = False
+            db.session.commit()
+    if current_user.id == 1:
+        return redirect(url_for('admin.admin_pokemon'))
+    else:
+        return redirect(url_for('main.view_session'))

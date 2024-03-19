@@ -6,6 +6,15 @@
 
 {% block main %}
 <table class="table table-hover table-bordered table-striped">
+    <tr>
+        <td class="title">Session ID</td>
+        <td class="title">User ID</td>
+        <td class="title">Session Number</td>
+        <td class="title">Players</td>
+        <td class="title">Ruleset</td>
+        <td class="title">Route Tracking</td>
+        <td class="title">Delete</td>
+    </tr>
     {% for session in sessions %}
         <tr>
             <td>Session Id: {{ session.id }}</td>
@@ -14,6 +23,8 @@
             <td>{% for player in session.players %}
                 Player {{ player.player_num }}: {{ player.name }}<br>
             {% endfor %}</td>
+            <td>{{ session.ruleset }}</td>
+            <td>{{ session.route_tracking }}</td>
             <td><a href="{{ url_for('admin.admin_delete_session', session_id=session.id) }}" class="btn btn-danger">Delete</a></td>
         </tr>
     {% endfor %}

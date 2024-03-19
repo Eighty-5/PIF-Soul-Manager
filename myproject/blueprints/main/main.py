@@ -3,8 +3,9 @@ from flask_login import login_required, current_user
 
 from ...extensions import db
 from ...models import Users, Players, Pokedex, Pokemon, Sessions, PokedexBase
-from ...webforms import LoginForm, RegisterForm, CreateSessionForm, PokemonEvolveForm
-from ...helpers import find_first_missing
+from ...webforms import CreateSessionForm
+from .main_utils import find_first_missing_session_number
+from ...utils import get_default_vars
 
 main = Blueprint('main', __name__, template_folder='templates', static_folder='static', static_url_path='/main/static')
 
@@ -22,7 +23,7 @@ def create_session():
     # Set variables
     form = CreateSessionForm()
     id = current_user.id
-    sessions = Sessions.query.filter_by(user_id=id)
+    sessions = Sessions.query.filter(Sessions.user_id==id)
         
     # If session count is >=3 return them to the session select page
     if sessions.count() >= 3:
@@ -36,24 +37,15 @@ def create_session():
 
     # Validate that form was submited
     if form.validate_on_submit():
-        # If no sessions yet just create new session
-        # if sessions.first() is None:
-        #     new_session = Sessions(user_id=id, number=1)
-        #     db.session.add(new_session)
-        #     db.session.commit()
-        
-        # https://stackoverflow.com/questions/31842159/get-a-list-of-values-of-one-column-from-the-results-of-a-query
         session_num_lst = [session.number for session in sessions]
-
-        # Double check that total session count is less than 3 in case they get to this page
+        ruleset=int(form.ruleset.data)
+        route_tracking = True if ruleset != 1 else False
         if len(session_num_lst) < 3:
-            # Find first missing session number
-            new_session_num = find_first_missing(session_num_lst)
+            new_session_num = find_first_missing_session_number(session_num_lst)
             if not new_session_num == False:
-                new_session = Sessions(user_id=id, number=new_session_num)
+                new_session = Sessions(user_id=id, number=new_session_num, ruleset=int(form.ruleset.data), route_tracking=route_tracking)
                 db.session.add(new_session)
                 db.session.commit()
-                # Create the player count and add new players to DB
                 player_count = 1
                 for player in form.player_names:
                     if player.player_name.data:
@@ -66,13 +58,10 @@ def create_session():
         
         flash("Already at max session count. Please delete one of your sessions to add another")
         return redirect('/session/select')
-        
-    # Clear the Form
     form.player_num.data = ""
     for player in form.player_names:
         player.player_name.data = ""
     form.ruleset.data = ""
-
     return render_template('create_session.html', form=form)
 
 
@@ -80,20 +69,14 @@ def create_session():
 @main.route('/session/delete/<int:session_number>', methods=['GET', 'POST'])
 @login_required
 def delete_session(session_number):
-    # Set variables
     id = current_user.id
     session_to_delete = Sessions.query.filter_by(user_id=id, number=session_number).first()
-    
-    # Check whether the current user is an admin or is the user looking to delete the session
     if id == session_to_delete.user.id or current_user.id == 1:
-        # Delete the session and commit
         db.session.delete(session_to_delete)
         db.session.commit()
-        # If deleted session is the current session set the current session to none
         if Users.query.get(id).current_session == session_number:
             Users.query.get(id).current_session = None
             db.session.commit()
-        # If admin deleted the session return to admin/sessions else return to the session select
         if current_user.id == 1:
             return redirect('/admin/sessions')
         else:
@@ -126,12 +109,11 @@ def select_session():
 @main.route('/session/view', methods=['GET', 'POST'])
 @login_required
 def view_session():
-    id = current_user.id
-    current_session = Users.query.get(id).current_session
-    if current_session:
-        session_num = Sessions.query.get(current_session).number
-        return redirect(url_for('main.session_manager', session_num=session_num))
-    else:
+    current_session_id = Users.query.get(current_user.id).current_session
+    try:
+        current_session_num = Sessions.query.get(current_session_id).number
+        return redirect(url_for('main.session_manager', session_num=current_session_num))
+    except AttributeError:
         flash("Please Select a Session to View")
         return redirect(url_for('main.select_session'))
 
@@ -140,15 +122,15 @@ def view_session():
 @login_required
 def session_manager(session_num):
     id = current_user.id
-    session = Sessions.query.filter_by(user_id=id, number=session_num).first()
+    session = Sessions.query.filter(Sessions.user_id==id, Sessions.number==session_num).first()
     if session is None:
         flash("No record of that session")
         return redirect(url_for('main.select_session'))
         
-    players = Players.query.filter_by(session_id=session.id)
+    players = Players.query.filter(Players.session_id==session.id)
     
     # Get party length
-    party_length = Pokemon.query.filter_by(player_id=players[0].id, position='party').count()
+    party_length = Pokemon.query.filter(Pokemon.player_id==players.first().id, Pokemon.position=='party').count()
 
     width_numbers = []
     width_numbers.append(int(12 / players.count()))

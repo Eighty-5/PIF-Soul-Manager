@@ -1,0 +1,69 @@
+Patch 0.1.0 - 19_03_2024
+
+First "official" patch notes
+
+Additions
+- Proper Ruleset implementation
+    - Users can now select a provided ruleset upon creation of a session
+    - Provided rulesets are based on what I think are the most common rulesets
+    - Rulesets 2 through 5 restrict how many pokemon can be caught per route and what pokemon can be used for fusions
+        - Rulesets are explained below
+        - A future patch will add proper descriptions somewhere on the site, likely when creating a session
+    - Ruleset 1 is a "Full Freedom" ruleset that allows for manual linking, unlinking, no restrictions on fusions (except for fusions of already fused pokemon)
+        - Please select this ruleset upon session creation if your personal ruleset that you like to play with does not line up with any of the already provided ones
+    - A future update will narrow-down which pokemon are able to be fused during the fusing process to streamline the process even further.
+
+    - Complications - Spare Pokemon
+        - I know a popular ruleset is to allow spare pokemon to be caught especially when using a ruleset similar to 3 or 4. 
+        - I don't currently have a good way to implement this but would like to implement a way to do this in the future.
+
+Rulesets
+Rulesets are implemented to give more quality of life and ease of use to anyone using the tool. For example a popular rule for a Soul-Link Nuzlocke is to only allow each player to 
+capture 2 pokemon per route. These pokemon are then fused together and soul-linked to the fusion of the other players' two pokemon for that same route. So the tool will only allow the user 
+to fuse pokemon together that meet this criteria. Pokemon are also not soul-linked upon capture and tied to the route instead unlike in a couple other rulesets.
+
+1 - Full Freedom
+    - Players can catch any amount of pokemon per route
+    - Pokemon are not linked upon capture
+    - User is able to manually link/unlink pokemon at their discretion
+    - Route tracking is not enabled as players can track any amount of pokemon per route as they wish.
+2 - Auto-Link One Catch per Route
+    - Players can only catch one pokemon per route
+    - Pokemon entered at the same time will automatically become soul-linked
+    - Because base pokemon are soul-linked fusions must also contain soul-linked base pokemon. Head/Body order does not matter 
+    - Manual link/unlink is disabled
+3 - Auto-Link catches and Fusions two per route
+    - Players can only catch two pokemon per route
+    - Pokemon entered at the same time will automatically become soul-linked
+    - Because base pokemon are soul-linked fusions must also contain soul-linked base pokemon. Head/Body order does not matter 
+    - Manual link/unlink is disabled
+4 - Route-Link
+    - Players can only catch two pokemon per route
+    - Pokemon entered at the same time will be linked to the route selected
+    - Fusions can only occur if both the body and the head are from the same route 
+    - Fusions are soul-linked based on the base pokemon routes
+        - e.g. Player 1 fuses both pokemon caught in route 1 and that fusion is linked to Player 2's fused pokemon whose head and body are pokemon also caught in route 1.
+    - Manual link/unlink is disabled
+5 - Special ruleset
+    - This is the ruleset that I like to use as it allows for players more choice on their own fusions.
+    - Players can only catch two pokemon per route
+    - Pokemon are linked to the route they were caught in
+    - Fusion may occur as long as the combination of each players routes match up
+    - For example:
+        Player 1 catches Bulbasaur and Player 2 catches Chikorita in Route 1
+        Player 1 catches Charmander and Player 2 catches Cyndaquil in Route 1
+        Player 1 catches Squirtle and Player 2 catches Totodile in Route 2
+        Valid Fusion:
+            Player 1 fuses Bulbasaur and Squirtle together, Player 2 fuses Chikorita and Totodile together
+            Reason - Both Bulbasaur and Chikorita were caught in Route 1, and both Squirtle and Totodile were caught in Route 2 so the combination for both players is Route 1 and Route 2
+        Another Valid Fusion:
+            Player 1 fuses Bulbasaur and Squirtle together, Player 2 fuses Cyndaquil and Totodile together
+            Reason - Both Squirtle and Totodile were caught in Route 2 and ...
+            ... even though Bulbasaur was Players 1's first catch in route 1 and Cyndaquil was Players 2's second catch in route 1, ...
+            ... they were both still caught in Route 1 meaning the combination of each players routes is 1 and 2 and therefore a valid fusion
+        Invalid Fusion:
+            Player 1 tries to fuse Bulbasaur and Charmander together, Player 2 tries to fuse Cyndaquil and Totodile together
+            Reason - Bulbasaur and Cyndaquil were both caught in Route 1, however Player 2 tries to fuse a pokemon caught in Route 1 with a pokemon caught in Route 2 ...
+                    so Player 1's route combination is 1 and 1, while Player 2's route combination is 1 and 2 
+            Compromise - If Player 2 insists on using a fusion of Cyndaquil and Totodile together then Player 1 must include a pokemon caught in Route 1 and 2 in the fusion, ...
+                    ... therefore Player 1's fusion must at least contain Squirtle, however the other pokemon for the fusion can be either Bulbasaur or Cyndaquil

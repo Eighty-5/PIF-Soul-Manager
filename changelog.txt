@@ -1,0 +1,40 @@
+Changelog:
+
+13_03_2024:
+Added routes for linking and unlinking Pokemon
+    - /pokemon/link/<link_id_1>/<link_id_2>
+    - /pokemon/unlink/<player_num>/<link_id>
+Added Boolean field in Pokemon Model
+    - Allows for easier tracking of which pokemon are linked for sorting pokemon in the main session manager page
+    - Added column in admin_pokemon to reflect this change
+Added ruleset column to Sessions Model
+    - Preparation for implementing session rulesets
+Added ruleset input into Sessions table when creating session
+Added function to helpers file to get a new link_id
+    - Replaced all instances in program with new function
+Adjusted current_session and current_session_id variable to make more uniform and relative
+Added title for table in admin pages for clarity
+Fixed bug in update_pokedex.py where foreign keys where not being disabled correctly before deleting tables.
+
+15_03_2024
+Added python script for creating a route list
+    - create_route_list.py
+Added route_list.html file for inserting into route selection when adding pokemon
+
+16_03_2024
+Changed helpers.py to utils.py
+Added option to enable route tracking
+    - Added Route Tracking column to Sessions Model
+    - Added route tracking column to all admin tables
+    - Added added option to enable route tracking in Create Session page
+Added ruleset and route tracking checks when adding pokemon
+    - includes add_pokemon_per_ruleset_group() function in utils.py
+
+18_03_2024
+Multiple Rulesets implemented for fusing and adding. Additional bug testing required. Should work in min 90% of cases.
+Started process of separating utils file per blueprint
+
+19_03_2024
+Added sorting to party and box views showing all soul-linked pokemon first
+Removed option for route tracking
+    - unnecessary in the current version

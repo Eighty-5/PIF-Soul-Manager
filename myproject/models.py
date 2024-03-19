@@ -17,6 +17,8 @@ class Sessions(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), index=True)
     number = db.Column(db.Integer)
+    ruleset = db.Column(db.Integer)
+    route_tracking = db.Column(db.Boolean, default=False, nullable=False)
     players = db.relationship('Players', cascade='all, delete', backref='session')
 
 # Create Players model
@@ -31,13 +33,13 @@ class Players(db.Model):
 class Pokemon(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     player_id = db.Column(db.Integer, db.ForeignKey('players.id'), index=True, nullable=False)
-    pokedex_number = db.Column(db.String(17), db.ForeignKey('pokedex.number'), index=True, nullable=False) # Drop for Pokedex Truncate
-    sprite = db.Column(db.String(20), db.ForeignKey('artists.sprite'), index=True, nullable=False) # Drop for Artist Truncate
+    pokedex_number = db.Column(db.String(17), db.ForeignKey('pokedex.number'), index=True, nullable=False)
+    sprite = db.Column(db.String(20), db.ForeignKey('artists.sprite'), index=True, nullable=False)
     nickname = db.Column(db.String(30))
     link_id = db.Column(db.Integer)
-    route = db.Column(db.String(50))
+    linked = db.Column(db.Boolean, default=None, nullable=True)
+    route = db.Column(db.Integer, nullable=True)
     position = db.Column(db.String(5), nullable=False)
-    # ForeignKeyConstraint(['pokedex_number','sprite'], ['pokedex.number','artists.sprite'])
 
 # Create Base Pokedex Model
 class PokedexBase(db.Model):

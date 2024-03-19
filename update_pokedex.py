@@ -159,12 +159,13 @@ with app.app_context():
         if len(master_changes) == 0 and len(pokemon_delete) == 0:
             changes_exist = False
         
+        engine = create_engine(os.getenv('SQLALCHEMY_DATABASE_URI'))
+        with engine.connect() as connection:
+            connection.execute(text("set global foreign_key_checks = 0;"))
+            connection.commit()
+        
         if changes_exist:
             print("UPDATING POKEMON DB TABLE WITH CHANGES TO POKEDEX. . .")
-            engine = create_engine(os.getenv('SQLALCHEMY_DATABASE_URI'))
-            with engine.connect() as connection:
-                connection.execute(text("set global foreign_key_checks = 0;"))
-                connection.commit()
             delete_numbers(pokemon_delete)
             change_numbers(master_changes)
             print("POKEMON DB TABLE UPDATE COMPLETE")
@@ -212,10 +213,9 @@ with app.app_context():
             bulk_save_into_db(bulk_pokemon)
             bulk_save_into_db(bulk_artists)
         print("POKEDEX TABLE AND ARTISTS TABLE SUCCESSFULLY UPDATED")
-        if changes_exist:
-            with engine.connect() as connection:
-                connection.execute(text("set global foreign_key_checks = 1;"))
-                connection.commit()
+        with engine.connect() as connection:
+            connection.execute(text("set global foreign_key_checks = 1;"))
+            connection.commit()
     else:
         print("UPDATE CANCELED")
 

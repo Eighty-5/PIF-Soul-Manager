@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for
-from flask_login import login_required
+from flask_login import login_required, current_user
 
 from ...extensions import db
 from ...models import Users, Sessions, Players, Pokemon, Pokedex
@@ -27,7 +27,10 @@ def admin_delete_session(session_id):
     session_to_delete = Sessions.query.get(session_id)
     try:
         db.session.delete(session_to_delete)
-        db.session.commit()
+        db.session.commit() 
+        if Users.query.filter(Users.id == current_user.id).first().current_session == session_id:
+            Users.query.filter(Users.id == current_user.id).first().current_session == None
+            db.session.commit()
     except:
         flash("Could Not Delete this session")
     return redirect(url_for('admin.admin_sessions'))
@@ -59,8 +62,8 @@ def admin_pokemon():
 @login_required
 def admin_delete_pokemon(mon_id):
     link_id = Pokemon.query.get_or_404(mon_id).link_id
-    session_num = Pokemon.query.get_or_404(mon_id).player.session.id
-    for player in Players.query.filter_by(session_id=session_num):
+    session_id = Pokemon.query.get_or_404(mon_id).player.session.id
+    for player in Players.query.filter_by(session_id=session_id):
         pokemon_to_delete = Pokemon.query.filter_by(link_id=link_id, player_id=player.id).first()
         try:
             db.session.delete(pokemon_to_delete)
@@ -85,3 +88,9 @@ def admin_pokedex():
         numberform.number.data = ''
         return render_template('admin_pokedex.html', speciesform=speciesform, numberform=numberform, search_results=search_results)
     return render_template('admin_pokedex.html', speciesform=speciesform, numberform=numberform)
+
+
+@admin.route('/test1/', methods=['GET', 'POST'])
+@login_required
+def admin_test1():
+    return redirect(url_for('main.view_session'))

@@ -5,7 +5,7 @@
 {% endblock %}
 
 {% block header %}
-    Session Manager
+    Session Manager - Ruleset {{ session.ruleset }}
 {% endblock %}
 
 {% block main %}
@@ -19,7 +19,17 @@
                 {% for player in session.players %}
                     <input name="{{ player.number }}" list="pokedex" class="form-control" placeholder="{{ player.name }}'s new pokemon" autocomplete="off" tabindex="1" style="max-width:300px">
                 {% endfor %}
-                <button class="btn btn-primary" tabindex="2">Add Pokemon to Session</button>
+                <!-- <div class="input-group mb-3"> -->
+                {% if session.route_tracking %}
+                    <select class="custom-select" name="route" id="RouteSelect" tabindex="2">
+                        <option disabled selected>Select Route...</option>
+                        {% include 'route_list.html' %}
+                    </select>
+                {% endif %}
+                <div class="input-group-append">
+                    <button class="btn btn-secondary" tabindex="3">Add Pokemon</button>
+                </div>
+                <!-- </div> -->
             </form>
             <form action="{{ url_for('pokemon.add_random') }}" method="post">
                 <button class="btn btn-primary" tabindex="3">Add Random Pokemon</button>
@@ -70,12 +80,13 @@
                     <!-- Player Column -->
                     <div class="col-lg-{{ width_numbers[0] }}">
                         <h2 style="text-align:center">{{ player.name }}</h2>
-                        {% for mon, evo_list in zip(player.pokemon, player_evo_list) %}
+                        {% for mon, evo_list in zip(player.pokemon|sort(attribute='link_id')|sort(reverse=true, attribute='linked'), player_evo_list) %}
                             {% if mon.position == "party" %}
                                 <div class="row shadow p-3 mb-1 bg-body-tertiary rounded">
                                     <!-- Left Side -->
                                     <div class="col-md-6">
-                                        <div style="text-align:center">{{ mon.info.species }} - {{ mon.pokedex_number }}</div>
+                                        <div style="text-align:center">{{ mon.info.species }} - {{ mon.pokedex_number }} - {{ mon.link_id }}</div>
+                                        <div>Caught Route - {{ mon.route }}</div>
                                         <!-- Type -->
                                         <div>
                                             {{ mon.info.type_primary }}
@@ -109,6 +120,32 @@
                                                 </select>
                                                 <button type="submit">Send to Box</button>
                                             </form>
+                                        </div>
+                                        <!-- Link -->
+                                        <div>
+                                            {% if session.ruleset == 1 %}
+                                                {% if mon.linked %} 
+                                                    <form action="{{ url_for('pokemon.unlink_pokemon', player_num=player.number, link_id=mon.link_id) }}" method="post">
+                                                        <button type="submit">Unlink</button>
+                                                    </form>
+                                                {% else %}
+                                                <form action="{{ url_for('pokemon.link_pokemon', link_id_1=mon.link_id) }}" method="post">
+                                                    <select name="link_with">
+                                                        <option selected disabled>Link with ...</option>
+                                                        {% for other_players in session.players %}
+                                                            {% if other_players.id != player.id %}
+                                                                {% for other_pokemon in other_players.pokemon %}
+                                                                    {% if other_pokemon.link_id != mon.link_id %}
+                                                                        <option value="{{ other_pokemon.link_id }}">{{ other_pokemon.info.species }}</option>
+                                                                    {% endif %}
+                                                                {% endfor %}
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                    </select>
+                                                    <button type="submit">Link</button>
+                                                </form>
+                                                {% endif %}
+                                            {% endif %}
                                         </div>
                                         <!-- Oops -->
                                         <div>
@@ -155,12 +192,15 @@
                     <!-- Player Column -->
                     <div class="col-md-{{ width_numbers[0] }}">
                         <h2 style="text-align:center">{{ player.name }}</h2>
-                        {% for mon, evo_list in zip(player.pokemon, player_evo_list) %}
+                        {% for mon, evo_list in zip(player.pokemon|sort(attribute='link_id')|sort(reverse=true, attribute='linked'), player_evo_list) %}
                             {% if mon.position == "box" %}
                                 <div class="row shadow p-3 mb-1 bg-body-tertiary rounded">
                                     <!-- Left Side -->
                                     <div class="col-md-6">
                                         <div style="text-align:center;">{{ mon.info.species }} - {{ mon.pokedex_number }}</div>
+                                        <div>
+                                            Caught Route - {{ mon.route }}
+                                        </div>
                                         <!-- Type -->
                                         <div>
                                             {{ mon.info.type_primary }}
@@ -202,6 +242,32 @@
                                             <form action="{{ url_for('pokemon.switch_dead', link_id=mon.link_id) }}" method="post">
                                                 <button type="submit">Oops</button>
                                             </form>
+                                        </div>
+                                        <!-- Link -->
+                                        <div>
+                                            {% if session.ruleset == 1 %}
+                                                {% if mon.linked %} 
+                                                    <form action="{{ url_for('pokemon.unlink_pokemon', player_num=player.number, link_id=mon.link_id) }}" method="post">
+                                                        <button type="submit">Unlink</button>
+                                                    </form>
+                                                {% else %}
+                                                <form action="{{ url_for('pokemon.link_pokemon', link_id_1=mon.link_id) }}" method="post">
+                                                    <select name="link_with">
+                                                        <option selected disabled>Link with ...</option>
+                                                        {% for other_players in session.players %}
+                                                            {% if other_players.id != player.id %}
+                                                                {% for other_pokemon in other_players.pokemon %}
+                                                                    {% if other_pokemon.link_id != mon.link_id %}
+                                                                        <option value="{{ other_pokemon.link_id }}">{{ other_pokemon.info.species }}</option>
+                                                                    {% endif %}
+                                                                {% endfor %}
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                    </select>
+                                                    <button type="submit">Link</button>
+                                                </form>
+                                                {% endif %}
+                                            {% endif %}
                                         </div>
                                     </div>
                                     <!-- Right Side -->
