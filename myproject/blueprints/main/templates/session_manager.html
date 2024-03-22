@@ -153,6 +153,14 @@
                                                 <button type="submit">Oops</button>
                                             </form>
                                         </div>
+                                        <!-- Preview Fusions -->
+                                        {% if not mon.info.base_id_2 %}
+                                            <div>
+                                                <form action="{{ url_for('main.preview_fusions', player_num=player.number, link_id=mon.link_id) }}" method="post">
+                                                    <button type="submit">Preview Fusions</button>
+                                                </form>
+                                            </div>
+                                        {% endif %}
                                     </div>
                                     <!-- Right Side -->
                                     <!-- Sprite -->
@@ -176,6 +184,7 @@
                                                 <button type="submit">Change</button>
                                             </form>
                                         </div>
+                                        <a target ="_blank" rel="noopener noreferrer" href="https://if.daena.me/{{ mon.pokedex_number }}/">More info on FusionDex</a>
                                     </div>
                                 </div>
                             {% endif %}
@@ -269,6 +278,14 @@
                                                 {% endif %}
                                             {% endif %}
                                         </div>
+                                        <!-- Preview Fusions -->
+                                            {% if not mon.info.base_id_2 %}
+                                            <div>
+                                                <form action="{{ url_for('main.preview_fusions', player_num=player.number, link_id=mon.link_id) }}" method="post">
+                                                    <button type="submit">Preview Fusions</button>
+                                                </form>
+                                            </div>
+                                        {% endif %}
                                     </div>
                                     <!-- Right Side -->
                                     <!-- Sprite -->
@@ -292,6 +309,7 @@
                                                 <button type="submit">Change</button>
                                             </form>
                                         </div>
+                                        <a target ="_blank" rel="noopener noreferrer" href="https://if.daena.me/{{ mon.pokedex_number }}/">More info on FusionDex</a>
                                     </div>
                                 </div>
                             {% endif %}

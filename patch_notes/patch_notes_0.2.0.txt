@@ -1,0 +1,18 @@
+Patch 0.2.0 - 22_03_2024
+
+Additions
+
+- Preview Fusions 
+    - Added an option to preview the possible fusions combinations for each pokemon in the session
+    - Clicking on the button will take you to a separate page that shows every pokemon that can be fused with the pokemon selected
+      as well as the possible combinations of fusions for the other player(s) based on the ruleset selected
+    - There is also an option to toggle the final evolutions if you want to see some potential sprites if the pokemon is fully evolved
+    - View more info link available on preview fusion page as well (see below for more info)
+    - Added a toggle button to show the final evolutions of all the fusion previews
+    
+- View More info link
+    - Added a link to each pokemon per session that will take the user to the FusionDex (if.daena.me) page for that specific pokemon
+    - This will allow the user to see more info like stats and abilities
+
+Bug Fixes
+- Fixed bug where Wailmer evolutions were not showing properly

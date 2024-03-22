@@ -13,7 +13,6 @@ from .blueprints.admin.admin import admin
 from .blueprints.manage_users.manage_users import manage_users
 from .blueprints.pokemon.pokemon import pokemon
 
-
 # Load env variables
 load_dotenv()
 

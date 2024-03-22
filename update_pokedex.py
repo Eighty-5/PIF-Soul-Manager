@@ -25,13 +25,6 @@ def bulk_save_into_db(lst):
     lst.clear()
 
 with app.app_context():
-
-    # BACKUP DATABASE
-    backup_question = input('Backup Database [y/n]? ')
-    if backup_question == 'y':
-        db_backup_filename = 'pifgm_db_' + datetime.now().strftime('%Y-%m-%d_T%H-%M-%S') + '.sql'
-        subprocess.run(f"mysqldump -u root -p pif_game_manager > {os.getenv('DB_BACKUP_PATH')}{db_backup_filename}", shell=True)
-
     new_pokedex = {}
     pokedex_names, duplicates, duplicate_names = [], {}, {}
     with open('pokedex_stuff/if-base-dex.csv', newline='') as dexfile, open('pokedex_stuff/removed-dex.csv', newline='') as rdexfile:
@@ -106,6 +99,12 @@ with app.app_context():
         for number, info in new_pokedex.items():
             pokedex_list.write(f'    <option value="{info['species']}"></option>\n')
         pokedex_list.write("</datalist>")
+    
+     # BACKUP DATABASE
+    backup_question = input('Backup Database [y/n]? ')
+    if backup_question == 'y':
+        db_backup_filename = 'pifgm_db_' + datetime.now().strftime('%Y-%m-%d_T%H-%M-%S') + '.sql'
+        subprocess.run(f"mysqldump -u root -p pif_game_manager > {os.getenv('DB_BACKUP_PATH')}{db_backup_filename}", shell=True)
 
     # UPDATE DATABASE TABLES
     if continue_changes.lower() == 'y':

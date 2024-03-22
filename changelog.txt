@@ -38,3 +38,11 @@ Started process of separating utils file per blueprint
 Added sorting to party and box views showing all soul-linked pokemon first
 Removed option for route tracking
     - unnecessary in the current version
+Fixed bug where user was not being redirected to the Select Session page when deleting the current session. 
+
+21_03_2024
+Added preview fusions options to session manager
+Added preview fusions page
+Added toggle button on preview fusions page to toggle final evolutions on and off
+Fixed Wailmer evolution line in if-base-dex.csv and updated DB
+Updated update_pokedex.py to update db after continuing with changes
