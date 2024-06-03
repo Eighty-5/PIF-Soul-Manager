@@ -1,5 +1,6 @@
 from flask import Flask
 from flask_login import LoginManager
+from flask_wtf import CSRFProtect
 from .extensions import db
 from .models import Users
 from dotenv import load_dotenv
@@ -15,6 +16,9 @@ from .blueprints.pokemon.pokemon import pokemon
 
 # Load env variables
 load_dotenv()
+
+# CSRF Protections
+csrf = CSRFProtect()
 
 def create_app():
     app = Flask(__name__)
@@ -37,6 +41,7 @@ def create_app():
     def load_user(user_id):
         return Users.query.get(user_id)
     
+    csrf.init_app(app)
     
     db.init_app(app)
     migrate = Migrate(app, db)

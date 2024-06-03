@@ -1,0 +1,16 @@
+Patch 0.3.0 - 16_05_2024
+
+Update preparation before deploying to PythonAnywhere
+
+Additions
+
+- CSRF Protection
+    - Added CSRF protection for forms
+
+- Session Manager Homepage
+    - Changed Layout to include accordian style for party, box, graveyard
+    - Updated dropdowns style
+    - Added a 'Swap Fusions' button to any fused pokemon.
+        - swaps head and body of the target fused pokemon.
+    - Party and Box are no longer next to each other for some player numbers. All iterations have Party above Box and Box above Graveyard.
+    - Added confirmation when deleting pokemon from a session

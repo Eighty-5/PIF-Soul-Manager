@@ -35,11 +35,9 @@
         <br>
         {{ form.player_names.label(class="form-label")}}
         {% for name in form.player_names %}
-            {{ name.hidden_tag() }}
             {{ name.player_name(class="form-control", placeholder="Player Name") }}
         {% endfor %}
         <br>
-        {{ form.hidden_tag() }}
         {{ form.ruleset.label(class="form-label") }}
         {{ form.ruleset(class="form-control") }}
         <br>

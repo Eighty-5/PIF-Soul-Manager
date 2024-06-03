@@ -37,7 +37,8 @@ def add_pokemon():
             return redirect(url_for('main.view_session'))
     pokemon_to_add_dict = {}
     for key, value in request.form.items():
-        if key != 'route': pokemon_to_add_dict[key] = value 
+        if key != 'route' and key != 'csrf_token':
+            pokemon_to_add_dict[key] = value
     if ruleset == MANUAL_RULESET:
         added_pokemon_lst = []
         for player_num in pokemon_to_add_dict:
@@ -121,10 +122,14 @@ def change_variant(player_num, link_id):
     variant = request.form.get("variant_select")
     if variant == 'default':
         variant = ''
+    elif variant is None:
+        flash("Please select a variant sprite to switch to")
+        return redirect(url_for('main.view_session')) 
     variant_to_change = Pokemon.query.join(Players).join(Sessions).filter(
         Sessions.id == current_session_id).filter(
         Players.number == player_num).filter(
             Pokemon.link_id == link_id).first()
+    print(variant_to_change.pokedex_number, variant)
     variant_to_change.sprite = variant_to_change.pokedex_number + variant
     db.session.commit()
     return redirect(url_for('main.view_session'))
@@ -138,7 +143,7 @@ def fuse_pokemon():
     head_link_ids, body_link_ids = [], []
     
     for key, value in request.form.items():
-        if value is not None:
+        if value is not None and not key == 'csrf_token':
             if 'Head' in key:
                 head_link_ids.append(value)
             elif 'Body' in key:
@@ -152,7 +157,6 @@ def fuse_pokemon():
         flash("Ensure head and body is selected for each player")
         return redirect(url_for('main.view_session'))
     elif any(count > player_count for count in Counter(head_link_ids + body_link_ids).values()):
-        print(head_link_ids + body_link_ids)
         flash("Fusion Failed: A Pokemon was used multiple times in one fusion")
         return redirect(url_for('main.view_session'))
     
@@ -181,8 +185,10 @@ def fuse_pokemon():
             create_fusion_pokemon(new_link_id, head_link_ids, body_link_ids, ruleset, current_session_id)
         else:
             flash("not valid fusions")
-    else:
+    elif ruleset == MANUAL_RULESET:
         create_fusion_pokemon(new_link_id, head_link_ids, body_link_ids, ruleset, current_session_id)
+    else:
+        flash("Ruleset does not exist")
     return redirect(url_for('main.view_session'))
 
 
@@ -330,7 +336,9 @@ def link_pokemon(link_id_1):
         flash("Cannot perform manual link for current ruleset!")
         return redirect(url_for('main.view_session'))
     for key, value in request.form.items():
-        link_id_2 = int(value)
+        if key != 'csrf_token':
+            print(key, value)
+            link_id_2 = int(value)
     pokemon_1 = Pokemon.query.join(
         Sessions.players).join(
         Players.pokemon).filter(
@@ -409,3 +417,21 @@ def unlink_pokemon(player_num, link_id):
         return redirect(url_for('admin.admin_pokemon'))
     else:
         return redirect(url_for('main.view_session'))
+
+
+@pokemon.route('/swapfusion/<player_num>/<link_id>', methods=['GET', 'POST'])
+@login_required
+def swap_fusion(player_num, link_id):
+    current_session, current_session_id, ruleset = get_default_vars(current_user.id)
+    fusion_to_swap = Pokemon.query.join(Sessions.players).join(Players.pokemon).filter(Pokemon.link_id == link_id, Sessions.id == current_session_id, Players.number == player_num).first()
+    if fusion_to_swap.info.base_id_2 is not None:
+        fusion_to_swap.pokedex_number = fusion_to_swap.info.base_id_2 + '.' + fusion_to_swap.info.base_id_1
+        fusion_to_swap.sprite = fusion_to_swap.pokedex_number
+        print(fusion_to_swap.pokedex_number)
+        db.session.commit()
+    else:
+        flash(f"ERROR: Pokemon is not a fused pokemon and cannot swap")
+
+    return redirect(url_for('main.view_session'))
+
+    

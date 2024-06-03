@@ -39,6 +39,11 @@ with app.app_context():
                     duplicate_names[number] = species
                 pokedex_names.append(species)
                 new_pokedex[number] = row
+                new_pokedex[number]['hp'], new_pokedex[number]['attack'], new_pokedex[number]['defense'], \
+                    new_pokedex[number]['sp_attack'], new_pokedex[number]['sp_defense'], new_pokedex[number]['speed'], \
+                    new_pokedex[number]['total'] = int(new_pokedex[number]['hp']), int(new_pokedex[number]['attack']), \
+                    int(new_pokedex[number]['defense']), int(new_pokedex[number]['sp_attack']), int(new_pokedex[number]['sp_defense']), \
+                    int(new_pokedex[number]['speed']), int(new_pokedex[number]['total']) 
         if len(duplicates) > 0:
             print(f"DUPLICATES FOUND:\n{duplicates}\nPLEASE REMOVE DUPLICATES FROM 'if-base-dex.csv'")
             exit()
@@ -135,15 +140,14 @@ with app.app_context():
                 else: 
                     base_2 = 'base'
                 if 'var' in prepped_sprite:
-                    if prepped_sprite['var'] in master_pokedex[base_1][base_2]['variants']:
+                    if prepped_sprite['var'] in master_pokedex[base_1][base_2]['variants_dict'].keys():
                         dna_dict['DUPLICATE'].append(sprite)
                     else:
                         var = prepped_sprite['var']
                         master_pokedex[base_1][base_2]['variants_dict'][var] = sprite['artist']
-                        master_pokedex[base_1][base_2]['variants'] = master_pokedex[base_1][base_2]['variants'] + var
                         sprites_file.write(f"{base_1}.{base_2}{var},{sprite['artist']},\n")
                 else:
-                    master_pokedex[base_1][base_2]['variants_dict'][''] = sprite['artist']
+                    master_pokedex[base_1][base_2]['variants_dict']['-'] = sprite['artist']
                     sprites_file.write(f"{base_1}.{base_2},{sprite['artist']},\n")
         print("MASTER POKEDEX DICTIONARY COMPLETE")
 
@@ -177,7 +181,7 @@ with app.app_context():
         db.session.commit()
 
         with open('pokedex_stuff/if-pokedex.csv', 'w') as dexfile, open('pokedex_stuff/sprite-credits.csv', 'w') as spritesfile:
-            dexfile.write('number,species,base_id_1,base_id_2,type_primary,type_secondary,family,family_order,variants,\n')
+            dexfile.write('number,species,base_id_1,base_id_2,type_primary,type_secondary,family,family_order,variants,hp,attack,defense,sp_attack,sp_defense,speed,total\n')
             spritesfile.write('sprite,artist,\n')
             bulk_artists, bulk_pokemon = [], []
             print("UPLOADING MASTER POKEDEX DICTIONARY AND ARTISTS TABLE TO DATABASE. . .")
@@ -191,7 +195,9 @@ with app.app_context():
                             except:
                                 print(f"POKEDEX TABLE OR ARTIST TABLE COULD NOT BE UPDATED")
                                 exit()
-                        base_addition = PokedexBase(number=base_id_1, species=base2_dict['species'])
+                        base_addition = PokedexBase(number=base_id_1, species=base2_dict['species'], hp=base2_dict['hp'], attack=base2_dict['attack'], 
+                                                    defense=base2_dict['defense'], sp_attack=base2_dict['sp_attack'], sp_defense=base2_dict['sp_defense'], 
+                                                    speed=base2_dict['speed'], total=base2_dict['total'])
                         db.session.add(base_addition)
                         db.session.commit()
                         pokedex_number = base_id_1
@@ -200,12 +206,16 @@ with app.app_context():
                         pokedex_number = f"{base_id_1}.{base_id_2}"
                     pokemon_addition = Pokedex(number=pokedex_number, species=base2_dict['species'], base_id_1=base_id_1, base_id_2=base_id_2,
                                                type_primary=base2_dict['type_primary'], type_secondary=base2_dict['type_secondary'], 
-                                               family=base2_dict['family'], family_order=base2_dict['family_order'], variants=base2_dict['variants'])
+                                               family=base2_dict['family'], family_order=base2_dict['family_order'], hp=base2_dict['hp'], 
+                                               attack=base2_dict['attack'], defense=base2_dict['defense'], sp_attack=base2_dict['sp_attack'], 
+                                               sp_defense=base2_dict['sp_defense'], speed=base2_dict['speed'], total=base2_dict['total'])
                     bulk_pokemon.append(pokemon_addition)
-                    dexfile.write(f"{pokedex_number},{base2_dict['species']},{base_id_1},{base_id_2},{base2_dict['type_primary']},{base2_dict['type_secondary']},{base2_dict['family']},{base2_dict['family_order']},{base2_dict['variants']},\n")
+                    dexfile.write(f"{pokedex_number},{base2_dict['species']},{base_id_1},{base_id_2},{base2_dict['type_primary']},{base2_dict['type_secondary']},{base2_dict['family']},{base2_dict['family_order']},{base2_dict['hp']},{base2_dict['attack']},{base2_dict['defense']},{base2_dict['sp_attack']},{base2_dict['sp_defense']},{base2_dict['speed']},{base2_dict['total']}\n")
                     for variant, artist in base2_dict['variants_dict'].items():
-                        artists_addition = Artists(sprite=f"{pokedex_number}{variant}",
-                                                    artist=artist)
+                        artists_addition = Artists(pokedex_number=pokedex_number,
+                                                   sprite=f"{pokedex_number}{'' if variant == '-' else variant}",
+                                                   variant_let=variant,
+                                                   artist=artist)
                         bulk_artists.append(artists_addition)
                         spritesfile.write(f"{pokedex_number}{variant},{artist},\n")
             # One last upload for last pokedex entry

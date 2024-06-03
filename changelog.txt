@@ -43,6 +43,28 @@ Fixed bug where user was not being redirected to the Select Session page when de
 21_03_2024
 Added preview fusions options to session manager
 Added preview fusions page
+
+22_03_2024
+Got rid of awful 'variant' string list in pokedex table and replaced with one-to-many relationship
+Started adjusting html pages with proper tab sizing per Google's standards
 Added toggle button on preview fusions page to toggle final evolutions on and off
 Fixed Wailmer evolution line in if-base-dex.csv and updated DB
 Updated update_pokedex.py to update db after continuing with changes
+
+23_03_2024
+Slight optimization to preview_fusions script
+session_manager now passes a dictionary of evolutions instead of list to avoid order issues
+    - also now no longer requires zip() iterations
+
+21_05_2024
+Preview Fusions page now contains stats
+
+22_05_2024
+Adjusted sitewide names to Infinite Fusion Soul Manager and IFSM
+
+30_05_2024
+Added README file
+
+30_05_2024
+Updated link button for ruleset 1 for bootstrap formatting
+

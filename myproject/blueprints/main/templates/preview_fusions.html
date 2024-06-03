@@ -47,7 +47,7 @@
                 <h2 style="text-align: center;">{{ selected_pokemon.info.species }}'s Partner</h2>
             </div> -->
             {% for player in players %}
-                <div class="col-lg-3">
+                <div class="col-lg-{{ column_widths['player_column'] }}">
                     <h2 style="text-align: center;">{{ player.name }}'s Fusions</h2>
                 </div>
             {% endfor %}
@@ -61,36 +61,91 @@
                     <img src="{{ url_for('main.static', filename='images/sprites/' ~ values['info']['base_id_1'] ~ '/' ~ values['info']['number'] ~ '.png') }}" onerror="this.onerror=null; this.src='/main/static/images/sprites/default/default.png'" width="150" height="150">
                 </div> -->
                 {% for player, combos in values['fusions'].items() %}
-                    <div class="col-lg-3 shadow">
+                    <div class="col-lg-{{ column_widths['player_column'] }} shadow">
                         {% for combo, times in combos.items() %}
                             <div class="row">
                                 <h2 style="text-align: center;">{{ combo }}</h2>
                                 <div class="row curr_fusions">
                                     {% for type, info in times['current'].items() %}
                                         <div class="col-lg-6">
-                                            {{ info['species'] }} - 
-                                            {{ info['typing'] }}
-                                            <br>
-                                            <img src="{{ url_for('main.static', filename='images/sprites/' ~ info['base_id_1'] ~ '/' ~ info['number'] ~ '.png') }}" onerror="this.onerror=null; this.src='/main/static/images/sprites/default/default.png'" width="150" height="150">
-                                            <br>
-                                            artist: {{ info['artist']}}
-                                            <br>
-                                            <a target ="_blank" rel="noopener noreferrer" href="https://if.daena.me/{{ info['number'] }}/">More info on FusionDex</a>
+                                          <div class="row">
+                                            <div class="col-lg-6">
+                                              {{ info['species'] }} - 
+                                              {{ info['typing'] }}
+                                              <br>
+                                              <img src="{{ url_for('main.static', filename='images/sprites/' ~ info['base_id_1'] ~ '/' ~ info['number'] ~ '.png') }}" onerror="this.onerror=null; this.src='/main/static/images/sprites/default/default.png'" width="150" height="150">
+                                              <br>
+                                              artist: {{ info['artist']}}
+                                              <br><br>
+                                              <a target ="_blank" rel="noopener noreferrer" href="https://if.daena.me/{{ info['number'] }}/">More info on FusionDex</a>
+                                            </div>
+                                            <div class="col-lg-6">
+                                              HP: {{ info['hp'] }}<div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="120" style="height: 10px">
+                                                <div class="progress-bar bg-info" style="width :{{info['hp']/255 * 100}}%"></div>
+                                              </div>
+                                              Attack: {{ info['attack'] }}<div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="120" style="height: 10px">
+                                                <div class="progress-bar bg-info" style="width :{{info['attack']/180 * 100}}%"></div>
+                                              </div>
+                                              Defense: {{ info['defense'] }}<div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="120" style="height: 10px">
+                                                <div class="progress-bar bg-info" style="width :{{info['defense']/230 * 100}}%"></div>
+                                              </div>
+                                              Sp. Attack: {{ info['sp_attack'] }}<div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="120" style="height: 10px">
+                                                <div class="progress-bar bg-info" style="width :{{info['sp_attack']/180 * 100}}%"></div>
+                                              </div>
+                                              Sp. Defense: {{ info['sp_defense'] }}<div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="120" style="height: 10px">
+                                                <div class="progress-bar bg-info" style="width :{{info['sp_defense']/230 * 100}}%"></div>
+                                              </div>
+                                              Speed: {{ info['speed'] }}<div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="120" style="height: 10px">
+                                                <div class="progress-bar bg-info" style="width :{{info['speed']/160 * 100}}%"></div>
+                                              </div>
+                                              Total: {{ info['total'] }}<div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="120" style="height: 10px">
+                                                <div class="progress-bar bg-info" style="width :{{info['total']/780 * 100}}%"></div>
+                                              </div>
+                                            </div>
+                                          </div>
                                         </div>
                                     {% endfor %}
                                 </div>
                                 <div class="row final_fusions" style="display:none"> 
                                     {% for type, info in times['final'].items() %}
-                                        <div class="col-lg-6">
-                                            {{ info['species'] }} - 
+                                      <div class="col-lg-6">
+                                        <div class="row">
+                                          <div class="col-lg-6">
+                                            {{ info['species'] }} -
+                                            <br> 
                                             {{ info['typing'] }}
                                             <br>
                                             <img src="{{ url_for('main.static', filename='images/sprites/' ~ info['base_id_1'] ~ '/' ~ info['number'] ~ '.png') }}" onerror="this.onerror=null; this.src='/main/static/images/sprites/default/default.png'" width="150" height="150">
                                             <br>
                                             artist: {{ info['artist']}}
-                                            <br>
+                                            <br><br>
                                             <a target ="_blank" rel="noopener noreferrer" href="https://if.daena.me/{{ info['number'] }}/">More info on FusionDex</a>
+                                          </div>
+                                          <div class="col-lg-6">
+                                            HP: {{ info['hp'] }}<div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="150" style="height: 10px">
+                                              <div class="progress-bar bg-info" style="width :{{info['hp']/255 * 100}}%"></div>
+                                            </div>
+                                            Attack: {{ info['attack'] }}<div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="150" style="height: 10px">
+                                              <div class="progress-bar bg-info" style="width :{{info['attack']/180 * 100}}%"></div>
+                                            </div>
+                                            Defense: {{ info['defense'] }}<div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="150" style="height: 10px">
+                                              <div class="progress-bar bg-info" style="width :{{info['defense']/230 * 100}}%"></div>
+                                            </div>
+                                            Sp. Attack: {{ info['sp_attack'] }}<div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="150" style="height: 10px">
+                                              <div class="progress-bar bg-info" style="width :{{info['sp_attack']/180 * 100}}%"></div>
+                                            </div>
+                                            Sp. Defense: {{ info['sp_defense'] }}<div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="150" style="height: 10px">
+                                              <div class="progress-bar bg-info" style="width :{{info['sp_defense']/230 * 100}}%"></div>
+                                            </div>
+                                            Speed: {{ info['speed'] }}<div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="150" style="height: 10px">
+                                              <div class="progress-bar bg-info" style="width :{{info['speed']/160 * 100}}%"></div>
+                                            </div>
+                                            Total: {{ info['total'] }}<div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="height: 10px">
+                                              <div class="progress-bar bg-info" style="width :{{info['total']/780 * 100}}%"></div>
+                                            </div>
+                                          </div>
                                         </div>
+                                      </div>
                                     {% endfor %}
                                 </div>
                             </div>

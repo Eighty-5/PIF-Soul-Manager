@@ -33,6 +33,17 @@ def create_fusion_name(name_1, name_2):
         species = name_1 + name_2
     return species
 
+def create_fusion_stats(pokemon_1, pokemon_2):
+    fused_stats = {}
+    fused_stats['hp'] = int(2 * pokemon_1['hp']/3 + pokemon_2['hp']/3)
+    fused_stats['attack'] = int(2 * pokemon_2['attack']/3 + pokemon_1['attack']/3)
+    fused_stats['defense'] = int(2 * pokemon_2['defense']/3 + pokemon_1['defense']/3)
+    fused_stats['sp_attack'] = int(2 * pokemon_1['sp_attack']/3 + pokemon_2['sp_attack']/3)
+    fused_stats['sp_defense'] = int(2 * pokemon_1['sp_defense']/3 + pokemon_2['sp_defense']/3)
+    fused_stats['speed'] = int(2 * pokemon_2['speed']/3 + pokemon_1['speed']/3)
+    fused_stats['total'] = int(fused_stats['hp'] + fused_stats['attack'] + fused_stats['defense'] + fused_stats['sp_attack'] + fused_stats['sp_defense'] + fused_stats['speed'])
+    return fused_stats
+
 def prep_number(sprite):
     prep_dict = {}
     sprite_split = sprite.split('.')
@@ -71,10 +82,17 @@ def create_master_dex(master_pokedex, pokedex):
                                              'type_secondary': None if info_1['type_secondary'] == '' else info_1['type_secondary'],
                                              'family': info_1['family'],
                                              'family_order': info_1['family_order'],
-                                             'variants': '-',
-                                             'variants_dict': {'': 'japeal'}}
+                                             'variants_dict': {'-': 'japeal'},
+                                             'hp': info_1['hp'],
+                                             'attack': info_1['attack'],
+                                             'defense': info_1['defense'],
+                                             'sp_attack': info_1['sp_attack'],
+                                             'sp_defense': info_1['sp_defense'],
+                                             'speed': info_1['speed'],
+                                             'total': info_1['total']}
         for base_id_2, info_2 in pokedex.items():
-            type_primary, type_secondary = create_fusion_typing(info_1, info_2) 
+            type_primary, type_secondary = create_fusion_typing(info_1, info_2)
+            fused_stats = create_fusion_stats(info_1, info_2)
             master_pokedex[base_id_1][base_id_2] = {}
             master_pokedex[base_id_1][base_id_2] = {'species': create_fusion_name(info_1['name_1'], info_2['name_2']),
                                                     'base_id_1': base_id_1,
@@ -83,8 +101,15 @@ def create_master_dex(master_pokedex, pokedex):
                                                     'type_secondary': None if type_secondary == '' else type_secondary,
                                                     'family': f"{info_1['family']}.{info_2['family']}",
                                                     'family_order': f"{info_1['family_order']}.{info_2['family_order']}",
-                                                    'variants': '-',
-                                                    'variants_dict': {'': 'japeal'}}
+                                                    'variants_dict': {'-': 'japeal'},
+                                                    'hp': fused_stats['hp'],
+                                                    'attack': fused_stats['attack'],
+                                                    'defense': fused_stats['defense'],
+                                                    'sp_attack': fused_stats['sp_attack'],
+                                                    'sp_defense': fused_stats['sp_defense'],
+                                                    'speed': fused_stats['speed'],
+                                                    'total': fused_stats['total']}
+                                                    
 
 def change_numbers(dict):
     pokemon_to_change = Pokemon.query.join(Pokedex).filter(or_(Pokedex.base_id_1.in_(dict.keys()), Pokedex.base_id_2.in_(dict.keys())))
