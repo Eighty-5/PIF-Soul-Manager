@@ -139,7 +139,6 @@ def session_manager(session_num):
             evolution_lst = []
             evolutions = Pokedex.query.filter_by(family=pokemon.info.family).order_by(Pokedex.family_order)
             for evolution in evolutions:
-            for evolution in evolutions:
                 base_pokemon_1 = Pokedex.query.filter_by(number=evolution.base_id_1).first()
                 base_pokemon_2 = Pokedex.query.filter_by(number=evolution.base_id_2).first() 
                 if base_pokemon_1 is not None:
