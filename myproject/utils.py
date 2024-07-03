@@ -1,5 +1,5 @@
 from .extensions import db
-from .models import Players, PokedexBase, Pokedex, Pokemon, Sessions, Users
+from .models import Players, Pokedex, Pokemon, Sessions, Users
 from flask import flash, request, redirect, url_for
 
 def get_default_vars(id):

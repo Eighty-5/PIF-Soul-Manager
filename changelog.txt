@@ -68,3 +68,6 @@ Added README file
 30_05_2024
 Updated link button for ruleset 1 for bootstrap formatting
 
+31_05_2024
+Sprites no longer show up in preparation for deployment
+

@@ -14,3 +14,8 @@ Additions
         - swaps head and body of the target fused pokemon.
     - Party and Box are no longer next to each other for some player numbers. All iterations have Party above Box and Box above Graveyard.
     - Added confirmation when deleting pokemon from a session
+
+- Sprites
+    - Removed sprites from the page code to for deploying to PythonAnywhere
+    - Plan to re-add once a choice is made on how to tackle the larger file size
+

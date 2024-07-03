@@ -7,10 +7,10 @@ import subprocess
 from datetime import datetime
 from dotenv import load_dotenv
 from myproject import create_app
-from myproject.models import PokedexBase, Pokedex, Artists
+from myproject.models import Pokedex, Artists
 from myproject.extensions import db
 from pokedex_stuff.pokedex_helpers import prep_number, create_master_dex, change_numbers, delete_numbers
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, text, insert
 
 app = create_app()
 PASS_LST = ['450_1']
@@ -56,7 +56,7 @@ with app.app_context():
     new_pokedex = {i: new_pokedex[i] for i in sorted(list(new_pokedex.keys()))}
     # Infinite Fusion Dev usually just adds new entry instead of updating existing pokedex entries, 
     # however we will check just in case that changes in the future and update users recorded pokemon accordingly
-    pokedex_query = PokedexBase.query.all()
+    pokedex_query = Pokedex.query.filter(Pokedex.base_id_1 == None).all()
     old_pokedex = {entry.number: entry.species for entry in pokedex_query}
 
     pokemon_number_change, pokemon_species_change, pokemon_added_species, pokemon_removed, pokemon_delete = {}, {}, {}, {}, {}
@@ -164,7 +164,7 @@ with app.app_context():
         
         engine = create_engine(os.getenv('SQLALCHEMY_DATABASE_URI'))
         with engine.connect() as connection:
-            connection.execute(text("set global foreign_key_checks = 0;"))
+            connection.execute(text("set foreign_key_checks = 0;"))
             connection.commit()
         
         if changes_exist:
@@ -172,55 +172,83 @@ with app.app_context():
             delete_numbers(pokemon_delete)
             change_numbers(master_changes)
             print("POKEMON DB TABLE UPDATE COMPLETE")
-    
-        Pokedex.query.delete()
-        db.session.commit()
-        PokedexBase.query.delete()
-        db.session.commit()
+
         Artists.query.delete()
         db.session.commit()
+        Pokedex.query.filter(Pokedex.base_id_1 != None).delete()
+        db.session.commit()
+        Pokedex.query.delete()
+        db.session.commit()
+        
 
         with open('pokedex_stuff/if-pokedex.csv', 'w') as dexfile, open('pokedex_stuff/sprite-credits.csv', 'w') as spritesfile:
             dexfile.write('number,species,base_id_1,base_id_2,type_primary,type_secondary,family,family_order,variants,hp,attack,defense,sp_attack,sp_defense,speed,total\n')
             spritesfile.write('sprite,artist,\n')
             bulk_artists, bulk_pokemon = [], []
             print("UPLOADING MASTER POKEDEX DICTIONARY AND ARTISTS TABLE TO DATABASE. . .")
+            
+            bulk_base, bulk_base_artists = [], []
+            for id, dict in new_pokedex.items():
+                base_addition = dict.copy()
+                base_addition['base_id_1'], base_addition['base_id_2'] = None, None
+                bulk_base.append(base_addition)
+                for variant, artist in master_pokedex[id]['base']['variants_dict'].items():
+                    artists_addition = {'pokedex_number': id, 
+                                        'sprite': f"{id}{'' if variant == '-' else variant}",
+                                        'variant_let': variant,
+                                        'artist': artist}
+                    bulk_base_artists.append(artists_addition)
+                    # spritesfile.write(f"{pokedex_number}{variant},{artist},\n")
+                # print(bulk_base_artists)
+            db.session.execute(insert(Pokedex), bulk_base)
+            db.session.commit()
+            db.session.execute(insert(Artists), bulk_base_artists)
+            db.session.commit()
+            
+
+            continue_changes = input("CONTINUE WITH CHANGES [y/n]? ")
+            if continue_changes.lower() != 'y':
+                with engine.connect() as connection:
+                    connection.execute(text("set global foreign_key_checks = 1;"))
+                    connection.commit()
+                exit()
+
+
             for base_id_1, base1_dict in master_pokedex.items():
                 for base_id_2, base2_dict in base1_dict.items():
-                    if base_id_2 == 'base':
-                        if len(bulk_artists) > 0 and len(bulk_pokemon) > 0:
-                            try:
-                                bulk_save_into_db(bulk_pokemon)
-                                bulk_save_into_db(bulk_artists)
-                            except:
-                                print(f"POKEDEX TABLE OR ARTIST TABLE COULD NOT BE UPDATED")
-                                exit()
-                        base_addition = PokedexBase(number=base_id_1, species=base2_dict['species'], hp=base2_dict['hp'], attack=base2_dict['attack'], 
-                                                    defense=base2_dict['defense'], sp_attack=base2_dict['sp_attack'], sp_defense=base2_dict['sp_defense'], 
-                                                    speed=base2_dict['speed'], total=base2_dict['total'])
-                        db.session.add(base_addition)
-                        db.session.commit()
-                        pokedex_number = base_id_1
-                        base_id_2 = None
-                    else:
+                    if base_id_2 != 'base':
                         pokedex_number = f"{base_id_1}.{base_id_2}"
-                    pokemon_addition = Pokedex(number=pokedex_number, species=base2_dict['species'], base_id_1=base_id_1, base_id_2=base_id_2,
-                                               type_primary=base2_dict['type_primary'], type_secondary=base2_dict['type_secondary'], 
-                                               family=base2_dict['family'], family_order=base2_dict['family_order'], hp=base2_dict['hp'], 
-                                               attack=base2_dict['attack'], defense=base2_dict['defense'], sp_attack=base2_dict['sp_attack'], 
-                                               sp_defense=base2_dict['sp_defense'], speed=base2_dict['speed'], total=base2_dict['total'])
-                    bulk_pokemon.append(pokemon_addition)
-                    dexfile.write(f"{pokedex_number},{base2_dict['species']},{base_id_1},{base_id_2},{base2_dict['type_primary']},{base2_dict['type_secondary']},{base2_dict['family']},{base2_dict['family_order']},{base2_dict['hp']},{base2_dict['attack']},{base2_dict['defense']},{base2_dict['sp_attack']},{base2_dict['sp_defense']},{base2_dict['speed']},{base2_dict['total']}\n")
-                    for variant, artist in base2_dict['variants_dict'].items():
-                        artists_addition = Artists(pokedex_number=pokedex_number,
-                                                   sprite=f"{pokedex_number}{'' if variant == '-' else variant}",
-                                                   variant_let=variant,
-                                                   artist=artist)
-                        bulk_artists.append(artists_addition)
-                        spritesfile.write(f"{pokedex_number}{variant},{artist},\n")
+                        pokemon_addition = {'number':pokedex_number, 'species':base2_dict['species'], 'base_id_1':base_id_1, 'base_id_2':base_id_2,
+                                                'type_primary':base2_dict['type_primary'], 'type_secondary':base2_dict['type_secondary'], 
+                                                'family':base2_dict['family'], 'family_order':base2_dict['family_order'], 'hp':base2_dict['hp'], 
+                                                'attack':base2_dict['attack'], 'defense':base2_dict['defense'], 'sp_attack':base2_dict['sp_attack'], 
+                                                'sp_defense':base2_dict['sp_defense'], 'speed':base2_dict['speed'], 'total':base2_dict['total']}
+                        bulk_pokemon.append(pokemon_addition)
+                        dexfile.write(f"{pokedex_number},{base2_dict['species']},{base_id_1},{base_id_2},{base2_dict['type_primary']},{base2_dict['type_secondary']},{base2_dict['family']},{base2_dict['family_order']},{base2_dict['hp']},{base2_dict['attack']},{base2_dict['defense']},{base2_dict['sp_attack']},{base2_dict['sp_defense']},{base2_dict['speed']},{base2_dict['total']}\n")
+                        for variant, artist in base2_dict['variants_dict'].items():
+                            artists_addition = {'pokedex_number':pokedex_number,
+                                                    'sprite':f"{pokedex_number}{'' if variant == '-' else variant}",
+                                                    'variant_let':variant,
+                                                    'artist':artist}
+                            bulk_artists.append(artists_addition)
+                            spritesfile.write(f"{pokedex_number}{variant},{artist},\n")
+                try:
+                    print(f"Inserting {base_id_1} Pokemon")
+                    db.session.execute(insert(Pokedex), bulk_pokemon)
+                    db.session.commit()
+                    print(f"Inserting {base_id_1} Artists")
+                    db.session.execute(insert(Artists), bulk_artists)
+                    db.session.commit()
+                    bulk_pokemon.clear()
+                    bulk_artists.clear()
+                except:
+                    print(bulk_pokemon)
+                    print(bulk_artists)
+                    print(f"POKEDEX TABLE OR ARTIST TABLE COULD NOT BE UPDATED")
+                    exit()
             # One last upload for last pokedex entry
-            bulk_save_into_db(bulk_pokemon)
-            bulk_save_into_db(bulk_artists)
+            # bulk_save_into_db(bulk_pokemon)
+            # bulk_save_into_db(bulk_artists)
         print("POKEDEX TABLE AND ARTISTS TABLE SUCCESSFULLY UPDATED")
         with engine.connect() as connection:
             connection.execute(text("set global foreign_key_checks = 1;"))

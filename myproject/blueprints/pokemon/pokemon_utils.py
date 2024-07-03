@@ -1,6 +1,6 @@
 from ...extensions import db
 from flask import flash, request
-from ...models import Players, PokedexBase, Pokedex, Pokemon, Sessions
+from ...models import Players, Pokedex, Pokemon, Sessions
 
 def add_pokemon_per_ruleset_group(ruleset_group, player_number, species, link_id, route, current_session_id):
     if ruleset_group == 'manual':
@@ -11,7 +11,7 @@ def add_pokemon_per_ruleset_group(ruleset_group, player_number, species, link_id
         linked, link_id = False, get_new_link_id(current_session_id)
     else:
         return 'ERROR'
-    pokedex_number = PokedexBase.query.filter(PokedexBase.species==species).first().number
+    # pokedex_number = PokedexBase.query.filter(PokedexBase.species==species).first().number
     player_id = Players.query.join(Sessions).filter(Sessions.id==current_session_id, Players.number==player_number).first().id
     pokemon = Pokemon(player_id=player_id, pokedex_number=pokedex_number, sprite=pokedex_number, link_id=link_id, linked=linked, route=route, position='box')
     db.session.add(pokemon)

@@ -2,7 +2,7 @@ from collections import Counter
 from ...extensions import db
 from flask import Blueprint, request, flash, redirect, url_for
 from flask_login import login_required, current_user
-from ...models import Users, Sessions, Players, Pokemon, Pokedex, PokedexBase
+from ...models import Users, Sessions, Players, Pokemon, Pokedex
 from .pokemon_utils import add_pokemon_per_ruleset_group, create_fusion_pokemon, dex_check, evolution_check, get_new_link_id, remove_route_key    
 from sqlalchemy import or_
 from ...utils import get_default_vars
@@ -96,7 +96,8 @@ def add_random():
             linked = True
         elif ruleset in [ROUTE_RULESET, SPECIAL_RULESET]:
             link_id, linked = get_new_link_id(current_session_id), False
-        rand_pokedex_number = random.randrange(1, PokedexBase.query.count())
+        rand_pokedex_number = random.randrange(1, Pokedex.query.filter(Pokedex.base_id_1==None).count())
+        print(rand_pokedex_number)
 
         pokemon = Pokemon(
             player_id=player.id,
@@ -108,7 +109,7 @@ def add_random():
             position='box')
         db.session.add(pokemon)
         added_pokemon_lst.append(rand_pokedex_number)
-    added_pokemon_lst = [PokedexBase.query.filter(PokedexBase.number == i).first().species for i in added_pokemon_lst]
+    added_pokemon_lst = [Pokedex.query.filter(Pokedex.number == i).first().species for i in added_pokemon_lst]
     db.session.commit()
     flash(f"{', '.join(added_pokemon_lst)} were added to the session! ")
     return redirect(url_for('main.view_session'))

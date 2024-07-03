@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, flash, redirect, url_for
 from flask_login import login_required, current_user
 
 from ...extensions import db
-from ...models import Users, Players, Pokedex, Pokemon, Sessions, PokedexBase, Artists
+from ...models import Users, Players, Pokedex, Pokemon, Sessions, Artists
 from ...webforms import CreateSessionForm
 from .main_utils import find_first_missing_session_number, get_column_widths
 from ...utils import get_default_vars
@@ -131,7 +131,7 @@ def session_manager(session_num):
     players = Players.query.filter(Players.session_id==session.id)
     party_length = Pokemon.query.filter(Pokemon.player_id==players.first().id, Pokemon.position=='party').count()
     column_widths = get_column_widths(players.count())
-    
+
     # Evolutions
     evolutions_dict = {}
     for player in players:
@@ -139,13 +139,14 @@ def session_manager(session_num):
             evolution_lst = []
             evolutions = Pokedex.query.filter_by(family=pokemon.info.family).order_by(Pokedex.family_order)
             for evolution in evolutions:
-                base_pokemon_1 = PokedexBase.query.filter_by(number=evolution.base_id_1).first()
-                base_pokemon_2 = PokedexBase.query.filter_by(number=evolution.base_id_2).first() 
-                if base_pokemon_2 is not None:
+            for evolution in evolutions:
+                base_pokemon_1 = Pokedex.query.filter_by(number=evolution.base_id_1).first()
+                base_pokemon_2 = Pokedex.query.filter_by(number=evolution.base_id_2).first() 
+                if base_pokemon_1 is not None:
                     evo_names = f"{base_pokemon_1.species} + {base_pokemon_2.species}"
                     evo_number = evolution.number
                 else:
-                    evo_names = base_pokemon_1.species
+                    evo_names = evolution.species
                     evo_number = evolution.number
                 evolution_lst.append({'number':evo_number, 'names':evo_names})
             evolutions_dict[pokemon.pokedex_number] = evolution_lst

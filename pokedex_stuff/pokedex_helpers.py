@@ -77,19 +77,20 @@ def prep_number(sprite):
 def create_master_dex(master_pokedex, pokedex):
     for base_id_1, info_1 in pokedex.items():
         master_pokedex[base_id_1] = {}
-        master_pokedex[base_id_1]['base'] = {'species': info_1['species'],
-                                             'type_primary': info_1['type_primary'],
-                                             'type_secondary': None if info_1['type_secondary'] == '' else info_1['type_secondary'],
-                                             'family': info_1['family'],
-                                             'family_order': info_1['family_order'],
-                                             'variants_dict': {'-': 'japeal'},
-                                             'hp': info_1['hp'],
-                                             'attack': info_1['attack'],
-                                             'defense': info_1['defense'],
-                                             'sp_attack': info_1['sp_attack'],
-                                             'sp_defense': info_1['sp_defense'],
-                                             'speed': info_1['speed'],
-                                             'total': info_1['total']}
+        master_pokedex[base_id_1]['base'] = {'variants_dict': {'-': 'japeal'}}
+        # master_pokedex[base_id_1]['base'] = {'species': info_1['species'],
+        #                                      'type_primary': info_1['type_primary'],
+        #                                      'type_secondary': None if info_1['type_secondary'] == '' else info_1['type_secondary'],
+        #                                      'family': info_1['family'],
+        #                                      'family_order': info_1['family_order'],
+        #                                      'variants_dict': {'-': 'japeal'},
+        #                                      'hp': info_1['hp'],
+        #                                      'attack': info_1['attack'],
+        #                                      'defense': info_1['defense'],
+        #                                      'sp_attack': info_1['sp_attack'],
+        #                                      'sp_defense': info_1['sp_defense'],
+        #                                      'speed': info_1['speed'],
+        #                                      'total': info_1['total']}
         for base_id_2, info_2 in pokedex.items():
             type_primary, type_secondary = create_fusion_typing(info_1, info_2)
             fused_stats = create_fusion_stats(info_1, info_2)

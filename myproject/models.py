@@ -42,27 +42,27 @@ class Pokemon(db.Model):
     position = db.Column(db.String(5), nullable=False)
 
 # Create Base Pokedex Model
-class PokedexBase(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    number = db.Column(db.String(5), unique=True, nullable=False)
-    species = db.Column(db.String(30), nullable=False)
-    pokedex_base_1 = db.relationship('Pokedex', foreign_keys="Pokedex.base_id_1", cascade='save-update', backref='base_1')
-    pokedex_base_2 = db.relationship('Pokedex', foreign_keys="Pokedex.base_id_2", cascade='save-update', backref='base_2')
-    hp = db.Column(db.Integer)
-    attack = db.Column(db.Integer)
-    defense = db.Column(db.Integer)
-    sp_attack = db.Column(db.Integer)
-    sp_defense = db.Column(db.Integer)
-    speed = db.Column(db.Integer)
-    total = db.Column(db.Integer)
+# class PokedexBase(db.Model):
+#     id = db.Column(db.Integer, primary_key=True)
+#     number = db.Column(db.String(5), unique=True, nullable=False)
+#     species = db.Column(db.String(30), nullable=False)
+#     # pokedex_base_1 = db.relationship('Pokedex', foreign_keys="Pokedex.base_id_1", cascade='save-update', backref='base_1')
+#     # pokedex_base_2 = db.relationship('Pokedex', foreign_keys="Pokedex.base_id_2", cascade='save-update', backref='base_2')
+#     hp = db.Column(db.Integer)
+#     attack = db.Column(db.Integer)
+#     defense = db.Column(db.Integer)
+#     sp_attack = db.Column(db.Integer)
+#     sp_defense = db.Column(db.Integer)
+#     speed = db.Column(db.Integer)
+#     total = db.Column(db.Integer)
 
 # Create Pokedex Model
 class Pokedex(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    number = db.Column(db.String(17), unique=True, index=True, nullable=False)
+    number = db.Column(db.String(17), primary_key=True, unique=True, index=True, nullable=False)
     species = db.Column(db.String(30), nullable=False)
-    base_id_1 = db.Column(db.String(5), db.ForeignKey('pokedex_base.number'), nullable=False)
-    base_id_2 = db.Column(db.String(5), db.ForeignKey('pokedex_base.number'), nullable=True)
+    base_id_1 = db.Column(db.String(5), db.ForeignKey(number), nullable=True)
+    base_id_2 = db.Column(db.String(5), db.ForeignKey(number), nullable=True)
     type_primary = db.Column(db.String(10), nullable=False)
     type_secondary = db.Column(db.String(10), nullable=True)
     family = db.Column(db.String(17), index=True, nullable=False)
@@ -75,14 +75,21 @@ class Pokedex(db.Model):
     speed = db.Column(db.Integer)
     total = db.Column(db.Integer)
     pokemon = db.relationship('Pokemon', cascade='save-update', backref='info')
-    artists = db.relationship('Artists', cascade='save-update', backref='pokedex_info')
+    artists = db.relationship('Artists', cascade='save-update', backref='pokedex')
+    # pokedex_r_base_1 = db.relationship('Pokedex', foreign_keys="Pokedex.base_id_1", cascade='save-update', backref='base_1', remote_side=[base_id_1])
+    # pokedex_r_base_2 = db.relationship('Pokedex', foreign_keys="Pokedex.base_id_2", cascade='save-update', backref='base_2', remote_side=[base_id_2])
+    # pokedex_base_1 = db.relationship('Pokedex', foreign_keys='Pokedex.base_id_1', cascade='save-update', backref='base_1', remote_side=number)
+    # pokedex_base_2 = db.relationship('Pokedex', foreign_keys='Pokedex.base_id_2', cascade='save-update', backref='base_2', remote_side=number)
+    pokedex_base_1 = db.relationship('Pokedex', foreign_keys="Pokedex.base_id_1", backref='base_1', remote_side=number)
+    pokedex_base_2 = db.relationship('Pokedex', foreign_keys="Pokedex.base_id_2", backref='base_2', remote_side=number)
 
 # Sprite/Artist Model
 class Artists(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     pokedex_number = db.Column(db.String(17), db.ForeignKey('pokedex.number'), index=True, nullable=False)
-    sprite = db.Column(db.String(20), unique=True, index=True)
+    sprite = db.Column(db.String(20), primary_key=True, unique=True, index=True)
     variant_let = db.Column(db.String(2))
     artist = db.Column(db.String(100))
     pokemon = db.relationship('Pokemon', cascade='save-update', backref='artist')
+
 
