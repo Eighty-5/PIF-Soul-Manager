@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, flash, redirect, url_for
 from flask_login import login_required, current_user
 
 from ...extensions import db
-from ...models import Users, Sessions, Players, Pokemon, Pokedex
+from ...models import User, Save, Player, Pokemon, Pokedex
 from ...webforms import LoginForm, RegisterForm, AdminAddPokedexForm, SearchNumberForm, SearchSpeciesForm
 
 import csv
@@ -18,18 +18,18 @@ def index():
 # Admin route for showing all sessions in DB
 @admin.route('/sessions', methods=['GET', 'POST'])
 def admin_sessions():
-    sessions = Sessions.query.order_by(Sessions.id)
+    sessions = Save.query.order_by(Save.id)
     return render_template('admin_sessions.html', sessions=sessions)
 
-# Admin Delete Session
+# Admin Delete Save
 @admin.route('/sessions/delete/<int:session_id>', methods=['GET', 'POST'])
 def admin_delete_session(session_id):
-    session_to_delete = Sessions.query.get(session_id)
+    session_to_delete = Save.query.get(session_id)
     try:
         db.session.delete(session_to_delete)
         db.session.commit() 
-        if Users.query.filter(Users.id == current_user.id).first().current_session == session_id:
-            Users.query.filter(Users.id == current_user.id).first().current_session == None
+        if User.query.filter(User.id == current_user.id).first().current_session == session_id:
+            User.query.filter(User.id == current_user.id).first().current_session == None
             db.session.commit()
     except:
         flash("Could Not Delete this session")
@@ -39,14 +39,14 @@ def admin_delete_session(session_id):
 # Admin route for showing all users in DB
 @admin.route('/users', methods=['GET', 'POST'])
 def admin_users():
-    users = Users.query.order_by(Users.id)
+    users = User.query.order_by(User.id)
     return render_template('admin_users.html', users=users)
 
 
 # Admin route for showing all players in DB
 @admin.route('/players', methods=['GET', 'POST'])
 def admin_players():
-    players = Players.query.order_by(Players.id)
+    players = Player.query.order_by(Player.id)
     return render_template('admin_players.html', players=players)
 
 
@@ -63,7 +63,7 @@ def admin_pokemon():
 def admin_delete_pokemon(mon_id):
     link_id = Pokemon.query.get_or_404(mon_id).link_id
     session_id = Pokemon.query.get_or_404(mon_id).player.session.id
-    for player in Players.query.filter_by(session_id=session_id):
+    for player in Player.query.filter_by(session_id=session_id):
         pokemon_to_delete = Pokemon.query.filter_by(link_id=link_id, player_id=player.id).first()
         try:
             db.session.delete(pokemon_to_delete)

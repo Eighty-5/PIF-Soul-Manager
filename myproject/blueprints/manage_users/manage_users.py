@@ -1,9 +1,11 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 from flask_login import login_required, login_user, current_user, logout_user
+from sqlalchemy import select, create_engine
+from sqlalchemy.orm import Session
 
 from ...extensions import db
-from ...models import Users, Sessions, Players
+from ...models import User, Player
 from ...webforms import LoginForm, RegisterForm
 
 manage_users = Blueprint('manage_users', __name__, template_folder='templates')
@@ -18,7 +20,8 @@ def index():
 def login():
     form = LoginForm()
     if form.validate_on_submit():
-        user = Users.query.filter_by(username=form.username.data).first()
+        user = db.session.execute(db.select(User).where(User.username == form.username.data))
+        print(user.username)
         if user:
             # Check the hash if the user exists
             if check_password_hash(user.hash, form.password.data):
@@ -37,7 +40,7 @@ def login():
 @manage_users.route('/logout', methods=['GET', 'POST'])
 @login_required
 def logout():
-    Users.query.get_or_404(current_user.id).current_session = None
+    User.query.get_or_404(current_user.id).current_session = None
     db.session.commit()
     logout_user()
     flash("You have been Logged Out Successfully!")
@@ -50,10 +53,10 @@ def register():
     form = RegisterForm()
     if request.method == 'POST':
         if form.validate_on_submit():
-            user = Users.query.filter_by(username=form.username.data).first()
+            user = User.query.filter_by(username=form.username.data).first()
             # If no user with entered username exits:
             if user is None:
-                user = Users(username=form.username.data, hash=generate_password_hash(form.password.data, method='pbkdf2', salt_length=16))
+                user = User(username=form.username.data, hash=generate_password_hash(form.password.data, method='pbkdf2', salt_length=16))
                 db.session.add(user)
                 db.session.commit()
                 logout_user()
@@ -75,12 +78,12 @@ def register():
 @manage_users.route('/user/delete/<int:id>', methods=['GET', 'POST'])
 @login_required
 def delete_user(id):
-    user_to_delete = Users.query.get_or_404(id)
+    user_to_delete = User.query.get_or_404(id)
     try:
         db.session.delete(user_to_delete)
         db.session.commit()
         flash("User Deleted Successfully!")
-        users = Users.query.order_by(Users.last_login)
+        users = User.query.order_by(User.last_login)
     except:
         flash("Error there was a problem try again")
     if current_user.id == 8:
@@ -91,5 +94,5 @@ def delete_user(id):
 
 @manage_users.route('/users', methods=['GET', 'POST'])
 def users():
-    our_users = Users.query.order_by(Users.last_login)
+    our_users = User.query.order_by(User.last_login)
     return render_template('users.html', our_users=our_users)

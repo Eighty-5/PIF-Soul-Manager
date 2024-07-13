@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, flash, redirect, url_for
 from flask_login import login_required, current_user
 
 from ...extensions import db
-from ...models import Users, Players, Pokedex, Pokemon, Sessions, Artists
+from ...models import User, Player, Pokedex, Pokemon, Save, Artist
 from ...webforms import CreateSessionForm
 from .main_utils import find_first_missing_session_number, get_column_widths
 from ...utils import get_default_vars
@@ -17,7 +17,7 @@ def index():
     return render_template('about.html')
 
 
-# Create a New Session route
+# Create a New Save route
 @main.route('/session/create', methods=['GET', 'POST'])
 @login_required
 def create_session():
@@ -25,10 +25,10 @@ def create_session():
     # Set variables
     form = CreateSessionForm()
     id = current_user.id
-    sessions = Sessions.query.filter(Sessions.user_id==id)
+    sessions = Save.query.filter(Save.user_id==id)
         
     # If session count is >=3 return them to the session select page
-    if sessions.count() >= 3:
+    if Save.count() >= 3:
         flash("Already at max session count. Please delete one of your sessions to add another")
         return redirect(url_for('main.select_session'))
     players = [{'Player 1': 'Player 1 Name'},
@@ -45,17 +45,17 @@ def create_session():
         if len(session_num_lst) < 3:
             new_session_num = find_first_missing_session_number(session_num_lst)
             if not new_session_num == False:
-                new_session = Sessions(user_id=id, number=new_session_num, ruleset=int(form.ruleset.data), route_tracking=route_tracking)
+                new_session = Save(user_id=id, number=new_session_num, ruleset=int(form.ruleset.data), route_tracking=route_tracking)
                 db.session.add(new_session)
                 db.session.commit()
                 player_count = 1
                 for player in form.player_names:
                     if player.player_name.data:
-                        new_player = Players(session_id=new_session.id, number=player_count, name=player.player_name.data)
+                        new_player = Player(session_id=new_session.id, number=player_count, name=player.player_name.data)
                         db.session.add(new_player)
                         db.session.commit()
                         player_count = player_count + 1
-                flash("Session Added Successfully")
+                flash("Save Added Successfully")
                 return redirect('/session/select')
         
         flash("Already at max session count. Please delete one of your sessions to add another")
@@ -67,19 +67,19 @@ def create_session():
     return render_template('create_session.html', form=form)
 
 
-# Delete a Session route
+# Delete a Save route
 @main.route('/session/delete', methods=['GET', 'POST'])
 @login_required
 def delete_session():
     id = current_user.id
     if request.method == 'POST':
         session_number = request.form['session_to_delete']
-        session_to_delete = Sessions.query.filter_by(user_id=id, number=session_number).first()
+        session_to_delete = Save.query.filter_by(user_id=id, number=session_number).first()
     if id == session_to_delete.user.id or current_user.id == 1:
         db.session.delete(session_to_delete)
         db.session.commit()
-        if Users.query.get(id).current_session == session_number:
-            Users.query.get(id).current_session = None
+        if User.query.get(id).current_session == session_number:
+            User.query.get(id).current_session = None
             db.session.commit()
         if current_user.id == 1:
             return redirect('/admin/sessions')
@@ -94,29 +94,29 @@ def delete_session():
 @login_required
 def select_session():
     id = current_user.id
-    sessions = Sessions.query.filter_by(user_id=id).order_by(Sessions.number)
-    if Sessions.query.filter_by(user_id=id).first() == None:
-            flash("Please Create a Session First")
+    sessions = Save.query.filter_by(user_id=id).order_by(Save.number)
+    if Save.query.filter_by(user_id=id).first() == None:
+            flash("Please Create a Save First")
             return redirect(url_for('main.create_session')) 
     if request.method == 'POST':
-        current_session_to_update = Users.query.get_or_404(id)
-        current_session_id = Sessions.query.filter_by(user_id=id, number=request.form['session_number']).first().id
+        current_session_to_update = User.query.get_or_404(id)
+        current_session_id = Save.query.filter_by(user_id=id, number=request.form['session_number']).first().id
         current_session_to_update.current_session = current_session_id
         db.session.commit()
         return redirect(url_for('main.view_session'))
     return render_template('select_session.html', sessions=sessions)
 
 
-# Redirect to Session Manager for Navbar
+# Redirect to Save Manager for Navbar
 @main.route('/session/view', methods=['GET', 'POST'])
 @login_required
 def view_session():
-    current_session_id = Users.query.get(current_user.id).current_session
+    current_session_id = User.query.get(current_user.id).current_session
     try:
-        current_session_num = Sessions.query.get(current_session_id).number
+        current_session_num = Save.query.get(current_session_id).number
         return redirect(url_for('main.session_manager', session_num=current_session_num))
     except AttributeError:
-        flash("Please Select a Session to View")
+        flash("Please Select a Save to View")
         return redirect(url_for('main.select_session'))
 
 
@@ -124,11 +124,11 @@ def view_session():
 @login_required
 def session_manager(session_num):
     id = current_user.id
-    session = Sessions.query.filter(Sessions.user_id==id, Sessions.number==session_num).first()
+    session = Save.query.filter(Save.user_id==id, Save.number==session_num).first()
     if session is None:
         flash("No record of that session")
         return redirect(url_for('main.select_session'))
-    players = Players.query.filter(Players.session_id==session.id)
+    players = Player.query.filter(Player.session_id==session.id)
     party_length = Pokemon.query.filter(Pokemon.player_id==players.first().id, Pokemon.position=='party').count()
     column_widths = get_column_widths(players.count())
 
@@ -162,12 +162,12 @@ def session_manager(session_num):
 @login_required
 def preview_fusions(player_num, link_id):
     current_session, current_session_id, ruleset = get_default_vars(current_user.id)
-    selected_player = Players.query.join(Sessions).filter(Sessions.id == current_session_id, Players.number == player_num).first()
-    selected_pokemon = Pokemon.query.join(Sessions.players).join(Players.pokemon).filter(Sessions.id == current_session_id, Players.number == player_num, Pokemon.link_id == link_id).first()
+    selected_player = Player.query.join(Save).filter(Save.id == current_session_id, Player.number == player_num).first()
+    selected_pokemon = Pokemon.query.join(Save.players).join(Player.pokemon).filter(Save.id == current_session_id, Player.number == player_num, Pokemon.link_id == link_id).first()
     if ruleset != ROUTE_RULESET:
-        possible_partners = Pokemon.query.join(Sessions.players).join(Players.pokemon).join(Pokedex).filter(Sessions.id == current_session_id, Players.number == player_num, Pokemon.link_id != link_id, Pokemon.position != 'dead').filter(Pokedex.base_id_2 == None)
+        possible_partners = Pokemon.query.join(Save.players).join(Player.pokemon).join(Pokedex).filter(Save.id == current_session_id, Player.number == player_num, Pokemon.link_id != link_id, Pokemon.position != 'dead').filter(Pokedex.base_id_2 == None)
     elif ruleset == ROUTE_RULESET:
-        possible_partners = Pokemon.query.join(Sessions.players).join(Players.pokemon).join(Pokedex).filter(Sessions.id == current_session_id, Players.number == player_num, Pokemon.link_id != link_id, Pokemon.position != 'dead', Pokemon.route == selected_pokemon.route).filter(Pokedex.base_id_2 == None)
+        possible_partners = Pokemon.query.join(Save.players).join(Player.pokemon).join(Pokedex).filter(Save.id == current_session_id, Player.number == player_num, Pokemon.link_id != link_id, Pokemon.position != 'dead', Pokemon.route == selected_pokemon.route).filter(Pokedex.base_id_2 == None)
     if ruleset == MANUAL_RULESET:
         flash(f"Since session is using Full Freedom Ruleset possible fusions shown only for {selected_player.name}")
         players = [selected_player]
@@ -208,8 +208,8 @@ def preview_fusions(player_num, link_id):
                     pokedex_number_norm = pokemon_1.pokedex_number + '.' + pokemon_2.pokedex_number
                     pokedex_number_swap = pokemon_2.pokedex_number + '.' + pokemon_1.pokedex_number
                     combo = pokemon_1.info.species + ' + ' + pokemon_2.info.species
-                    norm = Pokedex.query.join(Artists).filter(Pokedex.number == pokedex_number_norm).first()
-                    swap = Pokedex.query.join(Artists).filter(Pokedex.number == pokedex_number_swap).first()
+                    norm = Pokedex.query.join(Artist).filter(Pokedex.number == pokedex_number_norm).first()
+                    swap = Pokedex.query.join(Artist).filter(Pokedex.number == pokedex_number_swap).first()
                     curr_fusion = {
                         'norm':{
                             'number':norm.number, 
@@ -237,8 +237,8 @@ def preview_fusions(player_num, link_id):
                             'sp_defense':swap.sp_defense,
                             'speed':swap.speed,
                             'total':swap.total}}
-                    final_norm = Pokedex.query.join(Artists).filter(Pokedex.family == norm.family).order_by(Pokedex.family_order.desc()).first()
-                    final_swap = Pokedex.query.join(Artists).filter(Pokedex.family == swap.family).order_by(Pokedex.family_order.desc()).first()
+                    final_norm = Pokedex.query.join(Artist).filter(Pokedex.family == norm.family).order_by(Pokedex.family_order.desc()).first()
+                    final_swap = Pokedex.query.join(Artist).filter(Pokedex.family == swap.family).order_by(Pokedex.family_order.desc()).first()
                     final_fusion = {
                         'norm':{
                             'number':final_norm.number, 

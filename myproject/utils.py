@@ -1,10 +1,10 @@
 from .extensions import db
-from .models import Players, Pokedex, Pokemon, Sessions, Users
+from .models import Player, Pokedex, Pokemon, Save, User
 from flask import flash, request, redirect, url_for
 
 def get_default_vars(id):
-    current_session = Sessions.query.get(
-        Users.query.get_or_404(id).current_session)
+    current_session = Save.query.get(
+        User.query.get_or_404(id).current_session)
     if not current_session:
         return redirect(url_for('main.select_session'))
     current_session_id = current_session.id

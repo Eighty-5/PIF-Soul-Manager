@@ -2,7 +2,7 @@ from collections import Counter
 from ...extensions import db
 from flask import Blueprint, request, flash, redirect, url_for
 from flask_login import login_required, current_user
-from ...models import Users, Sessions, Players, Pokemon, Pokedex
+from ...models import User, Save, Player, Pokemon, Pokedex
 from .pokemon_utils import add_pokemon_per_ruleset_group, create_fusion_pokemon, dex_check, evolution_check, get_new_link_id, remove_route_key    
 from sqlalchemy import or_
 from ...utils import get_default_vars
@@ -15,7 +15,7 @@ MANUAL_RULESET = 1
 AUTO_RULESET = [2, 3]
 ROUTE_RULESET = 4
 SPECIAL_RULESET = 5
-# Add Pokemon to Session route
+# Add Pokemon to Save route
 
 
 @pokemon.route('/add', methods=['POST'])
@@ -28,8 +28,8 @@ def add_pokemon():
         try:
             route = request.form['route']
             max_num = 1 if ruleset == 2 else 2
-            if not Pokemon.query.join(Sessions.players).join(Players.pokemon).filter(
-                    Sessions.id == current_session_id).filter(Pokemon.route == route).count() < max_num * len(current_session.players):
+            if not Pokemon.query.join(Save.players).join(Player.pokemon).filter(
+                    Save.id == current_session_id).filter(Pokemon.route == route).count() < max_num * len(current_session.players):
                 flash("Maximum Pokemon caught for that route. Please choose another")
                 return redirect(url_for('main.view_session'))
         except KeyError:
@@ -79,7 +79,7 @@ def add_pokemon():
 def add_random():
     current_session, current_session_id, ruleset = get_default_vars(current_user.id)
     link_id = get_new_link_id(current_session.id)
-    taken_routes = [r.route for r in Pokemon.query.join(Sessions.players).join(Players.pokemon).filter(Sessions.id == current_session_id, Players.number == 1)]
+    taken_routes = [r.route for r in Pokemon.query.join(Save.players).join(Player.pokemon).filter(Save.id == current_session_id, Player.number == 1)]
     rand_route = random.randrange(1, 100)
     if ruleset == 2:
         while taken_routes.count(rand_route) >= 1:
@@ -126,9 +126,9 @@ def change_variant(player_num, link_id):
     elif variant is None:
         flash("Please select a variant sprite to switch to")
         return redirect(url_for('main.view_session')) 
-    variant_to_change = Pokemon.query.join(Players).join(Sessions).filter(
-        Sessions.id == current_session_id).filter(
-        Players.number == player_num).filter(
+    variant_to_change = Pokemon.query.join(Player).join(Save).filter(
+        Save.id == current_session_id).filter(
+        Player.number == player_num).filter(
             Pokemon.link_id == link_id).first()
     print(variant_to_change.pokedex_number, variant)
     variant_to_change.sprite = variant_to_change.pokedex_number + variant
@@ -163,8 +163,8 @@ def fuse_pokemon():
     
     new_link_id = get_new_link_id(current_session_id)
     if ruleset == ROUTE_RULESET:
-        head_routes = [r.route for r in Pokemon.query.join(Sessions.players).join(Players.pokemon).filter(Sessions.id == current_session.id, Pokemon.link_id.in_(head_link_ids))]
-        body_routes = [r.route for r in Pokemon.query.join(Sessions.players).join(Players.pokemon).filter(Sessions.id == current_session.id, Pokemon.link_id.in_(body_link_ids))]
+        head_routes = [r.route for r in Pokemon.query.join(Save.players).join(Player.pokemon).filter(Save.id == current_session.id, Pokemon.link_id.in_(head_link_ids))]
+        body_routes = [r.route for r in Pokemon.query.join(Save.players).join(Player.pokemon).filter(Save.id == current_session.id, Pokemon.link_id.in_(body_link_ids))]
         if all(i == head_routes[0] for i in head_routes) and all(
                 i == head_routes[0] for i in body_routes):
             create_fusion_pokemon(new_link_id, head_link_ids, body_link_ids, ruleset, current_session_id)
@@ -173,7 +173,7 @@ def fuse_pokemon():
     elif ruleset == SPECIAL_RULESET:
         players_routes = []
         for head, body in zip(head_link_ids, body_link_ids):
-            players_routes.append(sorted([r.route for r in Pokemon.query.join(Sessions.players).join(Players.pokemon).filter(Sessions.id == current_session_id, or_(Pokemon.link_id == head, Pokemon.link_id == body))]))
+            players_routes.append(sorted([r.route for r in Pokemon.query.join(Save.players).join(Player.pokemon).filter(Save.id == current_session_id, or_(Pokemon.link_id == head, Pokemon.link_id == body))]))
         if all(i == players_routes[0] for i in players_routes):
             create_fusion_pokemon(new_link_id, head_link_ids, body_link_ids, ruleset, current_session_id)
         else:
@@ -199,7 +199,7 @@ def fuse_pokemon():
 def delete_pokemon(link_id):
     id = current_user.id
     current_session, current_session_id, ruleset = get_default_vars(current_user.id)
-    pokemon_to_delete = Pokemon.query.join(Sessions.players).join(Players.pokemon).filter(Sessions.id==current_session_id).filter(Pokemon.link_id==link_id)
+    pokemon_to_delete = Pokemon.query.join(Save.players).join(Player.pokemon).filter(Save.id==current_session_id).filter(Pokemon.link_id==link_id)
     deleted_pokemon = []
     for pokemon in pokemon_to_delete:
         deleted_pokemon.append(pokemon.info.species)
@@ -219,9 +219,9 @@ def evolve_pokemon(player_num, link_id):
     current_session, current_session_id, ruleset = get_default_vars(current_user.id)
     # Check if evolution is a valid evolution
     evolution = request.form.get(f"evolve_{str(player_num)}_{str(link_id)}")
-    pokemon_to_evolve = Pokemon.query.join(Players).join(Sessions).filter(
-        Sessions.id == current_session_id).filter(
-        Players.number == player_num).filter(
+    pokemon_to_evolve = Pokemon.query.join(Player).join(Save).filter(
+        Save.id == current_session_id).filter(
+        Player.number == player_num).filter(
             Pokemon.link_id == link_id).first()
     base_id = pokemon_to_evolve.pokedex_number
     prevolution = pokemon_to_evolve.info.species
@@ -246,10 +246,10 @@ def switch_party(link_id):
     current_session, current_session_id, ruleset = get_default_vars(current_user.id)
     for key, value in request.form.items():
         if value.isdigit():
-            pokemon_to_box = Pokemon.query.join(Sessions.players).join(Players.pokemon).filter(Sessions.id == current_session_id, Pokemon.link_id == value)
+            pokemon_to_box = Pokemon.query.join(Save.players).join(Player.pokemon).filter(Save.id == current_session_id, Pokemon.link_id == value)
             for pokemon in pokemon_to_box:
                 pokemon.position = 'box'
-    pokemon_to_party = Pokemon.query.join(Sessions.players).join(Players.pokemon).filter(Sessions.id == current_session_id, Pokemon.link_id == link_id)
+    pokemon_to_party = Pokemon.query.join(Save.players).join(Player.pokemon).filter(Save.id == current_session_id, Pokemon.link_id == link_id)
     for pokemon in pokemon_to_party:
 
         if Pokemon.query.filter(Pokemon.player_id == pokemon.player_id, Pokemon.position == "party").count() >= 6:
@@ -269,17 +269,17 @@ def switch_box(link_id):
         return redirect(url_for('main.view_session'))
     id = current_user.id
     current_session, current_session_id, ruleset = get_default_vars(current_user.id)
-    pokemon_to_box = Pokemon.query.join(Players).join(Sessions).join(Users).filter(
-        Users.id == id).filter(
-        Sessions.id == current_session_id).filter(
+    pokemon_to_box = Pokemon.query.join(Player).join(Save).join(User).filter(
+        User.id == id).filter(
+        Save.id == current_session_id).filter(
             Pokemon.link_id == link_id)
     for pokemon in pokemon_to_box:
         pokemon.position = 'box'
     for key, value in request.form.items():
         if value.isdigit():
-            pokemon_to_party = Pokemon.query.join(Players).join(Sessions).join(Users).filter(
-                Users.id == id).filter(
-                Sessions.id == current_session_id).filter(
+            pokemon_to_party = Pokemon.query.join(Player).join(Save).join(User).filter(
+                User.id == id).filter(
+                Save.id == current_session_id).filter(
                 Pokemon.link_id == value)
             for pokemon in pokemon_to_party:
                 if Pokemon.query.filter(Pokemon.player_id == pokemon.player_id, Pokemon.position == "party").count() >= 6:
@@ -299,9 +299,9 @@ def switch_dead(link_id):
         return redirect(url_for('main.view_session'))
     id = current_user.id
     current_session, current_session_id, ruleset = get_default_vars(current_user.id)
-    pokemon_to_dead = Pokemon.query.join(Players).join(Sessions).join(Users).filter(
-        Users.id == id).filter(
-        Sessions.id == current_session_id).filter(
+    pokemon_to_dead = Pokemon.query.join(Player).join(Save).join(User).filter(
+        User.id == id).filter(
+        Save.id == current_session_id).filter(
             Pokemon.link_id == link_id)
     for pokemon in pokemon_to_dead:
         pokemon.position = 'dead'
@@ -317,9 +317,9 @@ def switch_revive(link_id):
         return redirect(url_for('main.view_session'))
     id = current_user.id
     current_session, current_session_id, ruleset = get_default_vars(current_user.id)
-    pokemon_to_box = Pokemon.query.join(Players).join(Sessions).join(Users).filter(
-        Users.id == id).filter(
-        Sessions.id == current_session_id).filter(
+    pokemon_to_box = Pokemon.query.join(Player).join(Save).join(User).filter(
+        User.id == id).filter(
+        Save.id == current_session_id).filter(
             Pokemon.link_id == link_id)
     for pokemon in pokemon_to_box:
         pokemon.position = 'box'
@@ -341,15 +341,15 @@ def link_pokemon(link_id_1):
             print(key, value)
             link_id_2 = int(value)
     pokemon_1 = Pokemon.query.join(
-        Sessions.players).join(
-        Players.pokemon).filter(
+        Save.players).join(
+        Player.pokemon).filter(
             Pokemon.link_id == int(link_id_1),
-        Sessions.id == current_session_id)
+        Save.id == current_session_id)
     pokemon_2 = Pokemon.query.join(
-        Sessions.players).join(
-        Players.pokemon).filter(
+        Save.players).join(
+        Player.pokemon).filter(
             Pokemon.link_id == link_id_2,
-        Sessions.id == current_session_id)
+        Save.id == current_session_id)
     print(pokemon_2.first().position)
     if pokemon_1.count() == 0 or pokemon_2.count() == 0:
         flash(f"ERROR: Manual Link Failed - One or Two pokemon missing")
@@ -391,12 +391,12 @@ def link_pokemon(link_id_1):
 @login_required
 def unlink_pokemon(player_num, link_id):
     current_session, current_session_id, ruleset = get_default_vars(current_user.id)
-    # pokemon_to_unlink = Pokemon.query.join(Sessions.players).join(Players.pokemon).filter(Pokemon.link_id==link_id, Sessions.id==current_session_id, Players.number==player_num)
+    # pokemon_to_unlink = Pokemon.query.join(Save.players).join(Player.pokemon).filter(Pokemon.link_id==link_id, Save.id==current_session_id, Player.number==player_num)
     pokemon_linked = Pokemon.query.join(
-        Sessions.players).join(
-        Players.pokemon).filter(
+        Save.players).join(
+        Player.pokemon).filter(
             Pokemon.link_id == link_id,
-        Sessions.id == current_session_id)
+        Save.id == current_session_id)
     if pokemon_linked.count() == 0:
         flash(f"ERROR: Unlink Failed - Please select a valid pokemon")
     elif pokemon_linked.count() == 1:
@@ -404,13 +404,13 @@ def unlink_pokemon(player_num, link_id):
             pokemon_to_unlink.info.species} is not currently linked to another pokemon")
     else:
         pokemon_to_unlink = pokemon_linked.filter(
-            Players.number == player_num).first()
+            Player.number == player_num).first()
         flash(
             f"Manual Link Successful - {pokemon_to_unlink.info.species} successfully unlinked!")
         pokemon_to_unlink.link_id = get_new_link_id(current_session_id)
         pokemon_to_unlink.linked = False
         db.session.commit()
-        extra_unlink = Pokemon.query.join(Sessions.players).join(Players.pokemon).filter(Pokemon.link_id == link_id, Sessions.id == current_session_id)
+        extra_unlink = Pokemon.query.join(Save.players).join(Player.pokemon).filter(Pokemon.link_id == link_id, Save.id == current_session_id)
         if len(extra_unlink.all()) == 1:
             extra_unlink.first().linked = False
             db.session.commit()
@@ -424,7 +424,7 @@ def unlink_pokemon(player_num, link_id):
 @login_required
 def swap_fusion(player_num, link_id):
     current_session, current_session_id, ruleset = get_default_vars(current_user.id)
-    fusion_to_swap = Pokemon.query.join(Sessions.players).join(Players.pokemon).filter(Pokemon.link_id == link_id, Sessions.id == current_session_id, Players.number == player_num).first()
+    fusion_to_swap = Pokemon.query.join(Save.players).join(Player.pokemon).filter(Pokemon.link_id == link_id, Save.id == current_session_id, Player.number == player_num).first()
     if fusion_to_swap.info.base_id_2 is not None:
         fusion_to_swap.pokedex_number = fusion_to_swap.info.base_id_2 + '.' + fusion_to_swap.info.base_id_1
         fusion_to_swap.sprite = fusion_to_swap.pokedex_number

@@ -1,95 +1,182 @@
 from .extensions import db
 from flask_login import UserMixin
-from datetime import datetime
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import String, ForeignKey
+from typing import Optional
 
 # Models
 # Create Users model
-class Users(db.Model, UserMixin):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(20), nullable=False, unique=True)
-    hash = db.Column(db.String(128))
-    sessions = db.relationship('Sessions', cascade='all, delete', backref='user')
-    current_session = db.Column(db.Integer)
-    last_login = db.Column(db.DateTime, default=datetime.utcnow)
+class User(db.Model, UserMixin):
+    __tablename__ = "user"
 
-# Create Sessions Model
-class Sessions(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), index=True)
-    number = db.Column(db.Integer)
-    ruleset = db.Column(db.Integer)
-    route_tracking = db.Column(db.Boolean, default=False, nullable=False)
-    players = db.relationship('Players', cascade='all, delete', backref='session')
+    id: Mapped[int] = mapped_column(primary_key=True)
+    username: Mapped[str] = mapped_column(String(20), unique=True)
+    hash: Mapped[str] = mapped_column(String(128))
+
+    saves: Mapped[list["Save"]] = relationship(back_populates="users", cascade="all, delete")
+ 
+    def __repr__(self) -> str:
+        return f"User(id={self.id!r}, username={self.username!r})"
+    
+# Create Saves Model
+class Save(db.Model):
+    __tablename__ = "save"
+    
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), index=True)
+    number: Mapped[int]
+    ruleset: Mapped[int]
+    route_tracking: Mapped[bool] = mapped_column(default=False)
+    current: Mapped[bool] = mapped_column(default=False)
+
+    players: Mapped[list["Player"]] = relationship(back_populates="saves", cascade="all, delete")
+    users: Mapped["User"] = relationship(back_populates="saves")
+
+    def __repr__(self) -> str:
+        return f"Save(number={self.number!r}, user={self.users.username!r})"
+
 
 # Create Players model
-class Players(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    session_id = db.Column(db.Integer, db.ForeignKey('sessions.id'), index=True)
-    number = db.Column(db.Integer)
-    name = db.Column(db.String(20))
-    pokemon = db.relationship('Pokemon', cascade='all, delete', backref='player')
+class Player(db.Model):
+    __tablename__ = "player"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    save_id: Mapped[int] = mapped_column(ForeignKey("save.id"), index=True)
+    number: Mapped[int]
+    name: Mapped[str] = mapped_column(String(20))
+    
+    pokemons: Mapped[list["Pokemon"]] = relationship(back_populates="player", cascade="all, delete")
+    saves: Mapped["Save"] = relationship(back_populates="players", foreign_keys=[save_id])
+
+    def __repr__(self) -> str:
+        return f"Player(number={self.number!r}, name={self.name!r}, user={self.saves.users.username!r})"
 
 # Create Pokemon Model
 class Pokemon(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    player_id = db.Column(db.Integer, db.ForeignKey('players.id'), index=True, nullable=False)
-    pokedex_number = db.Column(db.String(17), db.ForeignKey('pokedex.number'), index=True, nullable=False)
-    sprite = db.Column(db.String(20), db.ForeignKey('artists.sprite'), index=True, nullable=False)
-    nickname = db.Column(db.String(30))
-    link_id = db.Column(db.Integer)
-    linked = db.Column(db.Boolean, default=None, nullable=True)
-    route = db.Column(db.Integer, nullable=True)
-    position = db.Column(db.String(5), nullable=False)
+    __tablename__ = "pokemon"
 
-# Create Base Pokedex Model
-# class PokedexBase(db.Model):
-#     id = db.Column(db.Integer, primary_key=True)
-#     number = db.Column(db.String(5), unique=True, nullable=False)
-#     species = db.Column(db.String(30), nullable=False)
-#     # pokedex_base_1 = db.relationship('Pokedex', foreign_keys="Pokedex.base_id_1", cascade='save-update', backref='base_1')
-#     # pokedex_base_2 = db.relationship('Pokedex', foreign_keys="Pokedex.base_id_2", cascade='save-update', backref='base_2')
-#     hp = db.Column(db.Integer)
-#     attack = db.Column(db.Integer)
-#     defense = db.Column(db.Integer)
-#     sp_attack = db.Column(db.Integer)
-#     sp_defense = db.Column(db.Integer)
-#     speed = db.Column(db.Integer)
-#     total = db.Column(db.Integer)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    player_id: Mapped[int] = mapped_column(ForeignKey("player.id"), index=True)
+    pokedex_id: Mapped[int] = mapped_column(ForeignKey("pokedex.id"), index=True)
+    sprite_id: Mapped[Optional[int]] = mapped_column(ForeignKey("sprite.id"), index=True)
+    nickname: Mapped[Optional[str]] = mapped_column(String(30))
+    link_id: Mapped[int]
+    linked: Mapped[bool]
+    route: Mapped[Optional[int]]
+    position: Mapped[str] = mapped_column(String(5))
+
+    player: Mapped["Player"] = relationship(back_populates="pokemons")
+    info: Mapped["Pokedex"] = relationship()
+    sprite: Mapped["Sprite"] = relationship()
+
+    def set_new_sprite(self):
+        pass
+
+    def __repr__(self) -> str:
+        return (f"Pokemon(id={self.id!r}, player={self.player.name!r}, "
+                f"pokedex_number={self.info.number!r}, species={self.info.species!r}, "
+                f"nickname={self.nickname!r}, link_id={self.link_id!r}, "
+                f"linked={self.linked!r}, route={self.route!r}, position={self.position!r})"
+                )
 
 # Create Pokedex Model
 class Pokedex(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    number = db.Column(db.String(17), primary_key=True, unique=True, index=True, nullable=False)
-    species = db.Column(db.String(30), nullable=False)
-    base_id_1 = db.Column(db.String(5), db.ForeignKey(number), nullable=True)
-    base_id_2 = db.Column(db.String(5), db.ForeignKey(number), nullable=True)
-    type_primary = db.Column(db.String(10), nullable=False)
-    type_secondary = db.Column(db.String(10), nullable=True)
-    family = db.Column(db.String(17), index=True, nullable=False)
-    family_order = db.Column(db.String(10), nullable=False)
-    hp = db.Column(db.Integer)
-    attack = db.Column(db.Integer)
-    defense = db.Column(db.Integer)
-    sp_attack = db.Column(db.Integer)
-    sp_defense = db.Column(db.Integer)
-    speed = db.Column(db.Integer)
-    total = db.Column(db.Integer)
-    pokemon = db.relationship('Pokemon', cascade='save-update', backref='info')
-    artists = db.relationship('Artists', cascade='save-update', backref='pokedex')
-    # pokedex_r_base_1 = db.relationship('Pokedex', foreign_keys="Pokedex.base_id_1", cascade='save-update', backref='base_1', remote_side=[base_id_1])
-    # pokedex_r_base_2 = db.relationship('Pokedex', foreign_keys="Pokedex.base_id_2", cascade='save-update', backref='base_2', remote_side=[base_id_2])
-    # pokedex_base_1 = db.relationship('Pokedex', foreign_keys='Pokedex.base_id_1', cascade='save-update', backref='base_1', remote_side=number)
-    # pokedex_base_2 = db.relationship('Pokedex', foreign_keys='Pokedex.base_id_2', cascade='save-update', backref='base_2', remote_side=number)
-    pokedex_base_1 = db.relationship('Pokedex', foreign_keys="Pokedex.base_id_1", backref='base_1', remote_side=number)
-    pokedex_base_2 = db.relationship('Pokedex', foreign_keys="Pokedex.base_id_2", backref='base_2', remote_side=number)
+    __tablename__ = "pokedex"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    number: Mapped[str] = mapped_column(String(17), unique=True, nullable=False)
+    head_id: Mapped[Optional[int]] = mapped_column(ForeignKey("pokedex.id"), index=True)
+    body_id: Mapped[Optional[int]] = mapped_column(ForeignKey("pokedex.id"), index=True)
+    species: Mapped[str] = mapped_column(String(30))
+    type_primary: Mapped[str] = mapped_column(String(10))
+    type_secondary: Mapped[Optional[str]] = mapped_column(String(10))
+    family: Mapped[str] = mapped_column(String(17), index=True)
+    family_order: Mapped[str] = mapped_column(String(10))
+
+    head: Mapped["Pokedex"] = relationship(back_populates="fusions_head", remote_side=[id], foreign_keys=[head_id])
+    body: Mapped["Pokedex"] = relationship(back_populates="fusions_body", remote_side=[id], foreign_keys=[body_id])
+    fusions_head: Mapped[list["Pokedex"]] = relationship(back_populates="head", remote_side=[head_id], foreign_keys=[head_id])
+    fusions_body: Mapped[list["Pokedex"]] = relationship(back_populates="body", remote_side=[body_id], foreign_keys=[body_id])
+    stats: Mapped["PokedexStats"] = relationship(cascade="all, delete")
+    sprites: Mapped[list["Sprite"]] = relationship(back_populates="pokedex_info")
+
+    def __repr__(self) -> str:
+        if self.head:
+            return (f"Pokedex(id={self.id!r}, number={self.number!r}, "
+                    f"species={self.species!r}, head={self.head.species!r}, "
+                    f"body={self.body.species!r}, type_primary={self.type_primary!r}, "
+                    f"type_secondary={self.type_secondary!r}, family={self.family!r}, "
+                    f"family_order={self.family_order!r})"
+                    )
+        else:
+            return (f"Pokedex(id={self.id!r}, number={self.number!r}, "
+                    f"species={self.species!r}, type_primary={self.type_primary!r}, "
+                    f"type_secondary={self.type_secondary!r}, "
+                    f"family={self.family!r}, family_order={self.family_order!r})"
+                    )
+
+
+class PokedexStats(db.Model):
+    __tablename__ = "pokedex_stats"
+    
+    id: Mapped[int] = mapped_column(primary_key=True)
+    pokedex_id: Mapped[int] = mapped_column(ForeignKey("pokedex.id"), index=True)
+    hp: Mapped[int]
+    attack: Mapped[int]
+    defense: Mapped[int]
+    sp_attack: Mapped[int]
+    sp_defense: Mapped[int]
+    speed: Mapped[int]
+
+    info: Mapped["Pokedex"] = relationship(back_populates="stats")
+
+    def total(self):
+        return self.attack + self.defense + self.sp_attack + self.sp_defense + self.speed
+
+    def __repr__(self) -> str:
+        return (f"Stat(id={self.id!r}, species={self.info.species!r}, "
+                f"hp={self.hp!r}, attack={self.attack!r}, "
+                f"defense={self.defense!r}, sp_attack={self.sp_attack!r}, "
+                f"sp_defense={self.sp_defense!r}, speed={self.speed!r}, "
+                f"total={self.total()!r})")
+
 
 # Sprite/Artist Model
-class Artists(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    pokedex_number = db.Column(db.String(17), db.ForeignKey('pokedex.number'), index=True, nullable=False)
-    sprite = db.Column(db.String(20), primary_key=True, unique=True, index=True)
-    variant_let = db.Column(db.String(2))
-    artist = db.Column(db.String(100))
-    pokemon = db.relationship('Pokemon', cascade='save-update', backref='artist')
+class Sprite(db.Model):
+    __tablename__ = "sprite"
 
+    id: Mapped[int] = mapped_column(primary_key=True)
+    variant_let: Mapped[str] = mapped_column(String(2))
+    pokedex_id: Mapped[int] = mapped_column(ForeignKey("pokedex.id"), index=True)
+    artist_id: Mapped[int] = mapped_column(ForeignKey("artist.id"), index=True)
 
+    artist_info: Mapped["Artist"] = relationship(back_populates="sprites")
+    pokedex_info: Mapped["Pokedex"] = relationship(back_populates="sprites")
+
+    def sprite_group(self):
+        if self.pokedex_info.head:
+            return f"{self.pokedex_info.head.number}"
+        else:
+            return f"{self.pokedex_info.number}"
+
+    def sprite_code(self):
+        return f"{self.pokedex_info.number}{self.variant_let}"
+    
+    def __repr__(self) -> str:
+        return (f"Sprite(id={self.id!r}, sprite_code={self.sprite_code()!r}, "
+                f"artist={self.artist_info.name!r}), "
+                f"sprite_group={self.sprite_group()!r}"
+                )
+    
+
+class Artist(db.Model):
+    __tablename__ = "artist"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(100), unique=True)
+
+    sprites: Mapped[list["Sprite"]] = relationship(back_populates="artist_info", cascade="save-update")
+
+    def __repr__(self) -> str:
+        return f"Artist(id={self.id!r}, name={self.name!r})"
+    

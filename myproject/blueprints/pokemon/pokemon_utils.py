@@ -1,6 +1,6 @@
 from ...extensions import db
 from flask import flash, request
-from ...models import Players, Pokedex, Pokemon, Sessions
+from ...models import Player, Pokedex, Pokemon, Save
 
 def add_pokemon_per_ruleset_group(ruleset_group, player_number, species, link_id, route, current_session_id):
     if ruleset_group == 'manual':
@@ -12,14 +12,14 @@ def add_pokemon_per_ruleset_group(ruleset_group, player_number, species, link_id
     else:
         return 'ERROR'
     # pokedex_number = PokedexBase.query.filter(PokedexBase.species==species).first().number
-    player_id = Players.query.join(Sessions).filter(Sessions.id==current_session_id, Players.number==player_number).first().id
+    player_id = Player.query.join(Save).filter(Save.id==current_session_id, Player.number==player_number).first().id
     pokemon = Pokemon(player_id=player_id, pokedex_number=pokedex_number, sprite=pokedex_number, link_id=link_id, linked=linked, route=route, position='box')
     db.session.add(pokemon)
 
 
 def create_fusion_pokemon(new_link_id, head_link_ids, body_link_ids, ruleset, current_session_id):
-    for head, body, player in zip(head_link_ids, body_link_ids, Players.query.filter(
-            Players.session_id==current_session_id)):
+    for head, body, player in zip(head_link_ids, body_link_ids, Player.query.filter(
+            Player.session_id==current_session_id)):
         if ruleset == 1:
             new_link_id == get_new_link_id(current_session_id)
         head_pokemon, body_pokemon = Pokemon.query.filter_by(
@@ -67,7 +67,7 @@ def fusion_check(heads, bodys):
 
 
 def get_new_link_id(current_session_id):
-    last_pokemon = Pokemon.query.join(Sessions.players).join(Players.pokemon).filter(Sessions.id==current_session_id).order_by(Pokemon.link_id.desc()).first()
+    last_pokemon = Pokemon.query.join(Save.players).join(Player.pokemon).filter(Save.id==current_session_id).order_by(Pokemon.link_id.desc()).first()
     if last_pokemon:
         return last_pokemon.link_id + 1
     else:
@@ -80,8 +80,8 @@ def remove_route_key(dict):
 def route_validation(num_of_encounters, current_session):
     try:
         route = request.form['route']
-        if not Pokemon.query.join(Sessions.players).join(Players.pokemon).filter(
-                Sessions.id == current_session.id).filter(Pokemon.route == route).count() < num_of_encounters * len(current_session.players):
+        if not Pokemon.query.join(Save.players).join(Player.pokemon).filter(
+                Save.id == current_session.id).filter(Pokemon.route == route).count() < num_of_encounters * len(current_session.players):
             flash("Maximum Pokemon caught for that route. Please choose another")
             return False
     except KeyError:

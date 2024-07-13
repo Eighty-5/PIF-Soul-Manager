@@ -2,9 +2,12 @@ from flask import Flask
 from flask_login import LoginManager
 from flask_wtf import CSRFProtect
 from .extensions import db
-from .models import Users
+from .models import User
 from dotenv import load_dotenv
 from flask_migrate import Migrate
+
+from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy import select
 
 import os
 import jinja2
@@ -39,7 +42,8 @@ def create_app():
 
     @login_manager.user_loader
     def load_user(user_id):
-        return Users.query.get(user_id)
+        stmt = select(User).where(User.id == user_id)
+        print(stmt)
     
     csrf.init_app(app)
     
