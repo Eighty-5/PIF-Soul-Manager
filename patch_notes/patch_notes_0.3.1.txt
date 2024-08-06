@@ -1,3 +1,4 @@
 Patch 0.3.1 - 03_06_2024
 
 Added requirements file for PythonAnywhere deployment
+Updater optimized for new database format
