@@ -92,13 +92,15 @@ class Pokedex(db.Model):
     type_secondary: Mapped[Optional[str]] = mapped_column(String(10))
     family: Mapped[str] = mapped_column(String(17), index=True)
     family_order: Mapped[str] = mapped_column(String(10))
+    name_1: Mapped[Optional[str]] = mapped_column(String(20))
+    name_2: Mapped[Optional[str]] = mapped_column(String(20))
 
     head: Mapped["Pokedex"] = relationship(back_populates="fusions_head", remote_side=[id], foreign_keys=[head_id])
     body: Mapped["Pokedex"] = relationship(back_populates="fusions_body", remote_side=[id], foreign_keys=[body_id])
-    fusions_head: Mapped[list["Pokedex"]] = relationship(back_populates="head", remote_side=[head_id], foreign_keys=[head_id])
-    fusions_body: Mapped[list["Pokedex"]] = relationship(back_populates="body", remote_side=[body_id], foreign_keys=[body_id])
-    stats: Mapped["PokedexStats"] = relationship(cascade="all, delete")
-    sprites: Mapped[list["Sprite"]] = relationship(back_populates="pokedex_info")
+    fusions_head: Mapped[list["Pokedex"]] = relationship(back_populates="head", remote_side=[head_id], foreign_keys=[head_id], cascade="all, delete-orphan")
+    fusions_body: Mapped[list["Pokedex"]] = relationship(back_populates="body", remote_side=[body_id], foreign_keys=[body_id], cascade="all, delete-orphan")
+    stats: Mapped["PokedexStats"] = relationship(back_populates="info", cascade="all, delete-orphan")
+    sprites: Mapped[list["Sprite"]] = relationship(back_populates="pokedex_info", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
         if self.head:
@@ -112,7 +114,8 @@ class Pokedex(db.Model):
             return (f"Pokedex(id={self.id!r}, number={self.number!r}, "
                     f"species={self.species!r}, type_primary={self.type_primary!r}, "
                     f"type_secondary={self.type_secondary!r}, "
-                    f"family={self.family!r}, family_order={self.family_order!r})"
+                    f"family={self.family!r}, family_order={self.family_order!r}, "
+                    f"name_1={self.name_1}, name_2={self.name_2})"
                     )
 
 
@@ -150,7 +153,7 @@ class Sprite(db.Model):
     pokedex_id: Mapped[int] = mapped_column(ForeignKey("pokedex.id"), index=True)
     artist_id: Mapped[int] = mapped_column(ForeignKey("artist.id"), index=True)
 
-    artist_info: Mapped["Artist"] = relationship(back_populates="sprites")
+    artists: Mapped["Artist"] = relationship(back_populates="sprites")
     pokedex_info: Mapped["Pokedex"] = relationship(back_populates="sprites")
 
     def sprite_group(self):
@@ -164,7 +167,7 @@ class Sprite(db.Model):
     
     def __repr__(self) -> str:
         return (f"Sprite(id={self.id!r}, sprite_code={self.sprite_code()!r}, "
-                f"artist={self.artist_info.name!r}), "
+                f"artist={self.artists.name!r}), "
                 f"sprite_group={self.sprite_group()!r}"
                 )
     
@@ -173,9 +176,9 @@ class Artist(db.Model):
     __tablename__ = "artist"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(100), unique=True)
+    name: Mapped[str] = mapped_column(String(100, collation="utf8_bin"), unique=True, index=True)
 
-    sprites: Mapped[list["Sprite"]] = relationship(back_populates="artist_info", cascade="save-update")
+    sprites: Mapped[list["Sprite"]] = relationship(back_populates="artists", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
         return f"Artist(id={self.id!r}, name={self.name!r})"
