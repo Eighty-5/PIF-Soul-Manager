@@ -22,7 +22,6 @@ def login():
     if form.validate_on_submit():
         user = db.session.execute(db.select(User).where(User.username == form.username.data)).scalar()
         if user:
-            # Check the hash if the user exists
             if check_password_hash(user.hash, form.password.data):
                 login_user(user)
                 flash("Login Successful!")

@@ -42,8 +42,7 @@ def create_app():
 
     @login_manager.user_loader
     def load_user(user_id):
-        stmt = select(User).where(User.id == user_id)
-        print(stmt)
+        return db.session.get(User, user_id)
     
     csrf.init_app(app)
     
