@@ -153,25 +153,22 @@ def preview_fusions(player_num, link_id):
     for partner in possible_partners:
         partner_species = partner.info.species
         master_dict[partner_species] = {
-                'info':{
-                    'number':partner.pokedex_number, 
-                    'typing':partner.info.type_primary if not partner.info.type_secondary else partner.info.type_primary + ' / ' + partner.info.type_secondary,
-                    'base_id_1':partner.info.base_id_1}, 
+                'info':{partner}, 
                 'fusions': {}}
         for player in players:
             if ruleset == SPECIAL_RULESET:
                 if partner.route == selected_pokemon.route:
-                    pokemon_same_route = Pokemon.query.filter(Pokemon.player_id == player.id, Pokemon.route == partner.route)
+                    pokemon_same_route = db.session.scalars(db.select(Pokemon).where(Pokemon.player==player, Pokemon.route==partner.route))
                     pokemons_1, pokemons_2 = [pokemon_same_route[0]], [pokemon_same_route[1]]
                 elif player.id == selected_pokemon.player_id:
                     pokemons_1 = [selected_pokemon]
                     pokemons_2 = [partner]
                 else:
-                    pokemons_1 = Pokemon.query.filter(Pokemon.player_id == player.id, Pokemon.route == selected_pokemon.route)
-                    pokemons_2 = Pokemon.query.filter(Pokemon.player_id == player.id, Pokemon.route == partner.route)
+                    pokemons_1 = db.session.scalar(db.select(Pokemon).where(Pokemon.player==player, Pokemon.route==selected_pokemon.route))
+                    pokemons_2 = db.session.scalar(db.select(Pokemon).where(Pokemon.player==player, Pokemon.route==partner.route))
             elif ruleset in AUTO_RULESET:
-                pokemons_1 = Pokemon.query.filter(Pokemon.player_id == player.id, Pokemon.link_id == selected_pokemon.link_id)
-                pokemons_2 = Pokemon.query.filter(Pokemon.player_id == player.id, Pokemon.link_id == partner.link_id)
+                pokemons_1 = db.session.scalar(db.select(Pokemon).where(Pokemon.player==player, Pokemon.link_id==selected_pokemon.link_id))
+                pokemons_2 = db.session.scalar(db.select(Pokemon).where(Pokemon.player==player, Pokemon.link_id==partner.link_id))
             elif ruleset == ROUTE_RULESET:
                 pokemons = Pokemon.query.filter(Pokemon.player_id == player.id, Pokemon.route == selected_pokemon.route)
                 pokemons_1, pokemons_2 = [pokemons[0]], [pokemons[1]]
