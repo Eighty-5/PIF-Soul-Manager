@@ -9,15 +9,15 @@
     <tr>
         <td class="title">ID</td>
         <td class="title">Player ID</td>
-        <td class="title">Pokedex ID</td>
+        <td class="title">Pokedex Number</td>
         <td class="title">Species</td>
         <td class="title">Sprite Variant</td>
         <td class="title">Nickname</td>
         <td class="title">Link ID</td>
         <td class="title">Linked</td>
         <td class="title">Route</td>
-        <td class="title">Base Id 1</td>
-        <td class="title">Base Id 2</td>
+        <td class="title">Head</td>
+        <td class="title">Body</td>
         <td class="title">Primary Typing</td>
         <td class="title">Secondary Typing</td>
         <td class="title">Position</td>
@@ -30,13 +30,13 @@
                 <td>{{ mon.player_id }}</td>
                 <td>{{ mon.info.number }}</td>
                 <td>{{ mon.info.species }}</td>
-                <td>{{ mon.sprite }}</td>
+                <td>{{ mon.sprite.variant_let }}</td>
                 <td>{{ mon.nickname }}</td>
                 <td>{{ mon.link_id }}</td>
                 <td>{{ mon.linked }}</td>
                 <td>{{ mon.route }}</td>
-                <td>{{ mon.info.base_id_1 }}</td>
-                <td>{{ mon.info.base_id_2 }}</td>
+                <td>{{ mon.info.head.species }}</td>
+                <td>{{ mon.info.body.species }}</td>
                 <td>{{ mon.info.type_primary }}</td>
                 <td>{{ mon.info.type_secondary }}</td>
                 <td>{{ mon.position }}</td>

@@ -15,62 +15,53 @@ def index():
     return "Admin Page"
 
 # Admin Test Pages
-# Admin route for showing all sessions in DB
-@admin.route('/sessions', methods=['GET', 'POST'])
-def admin_sessions():
-    sessions = Save.query.order_by(Save.id)
-    return render_template('admin_sessions.html', sessions=sessions)
+# Admin route for showing all saves in DB
+@admin.route('/saves', methods=['GET', 'POST'])
+def admin_saves():
+    saves = db.session.scalars(db.select(Save))
+    return render_template('admin_saves.html', saves=saves)
 
 # Admin Delete Save
-@admin.route('/sessions/delete/<int:session_id>', methods=['GET', 'POST'])
-def admin_delete_session(session_id):
-    session_to_delete = Save.query.get(session_id)
-    try:
-        db.session.delete(session_to_delete)
-        db.session.commit() 
-        if User.query.filter(User.id == current_user.id).first().current_session == session_id:
-            User.query.filter(User.id == current_user.id).first().current_session == None
-            db.session.commit()
-    except:
-        flash("Could Not Delete this session")
-    return redirect(url_for('admin.admin_sessions'))
+@admin.route('/saves/delete/<int:save_id>', methods=['GET', 'POST'])
+def admin_delete_save(save_id):
+    save_to_delete = db.session.scalar(db.select(Save).where(Save.id==save_id))
+    if save_to_delete:
+        db.session.delete(save_to_delete)
+        db.session.commit()
+    return redirect(url_for('admin.admin_saves'))
 
 
 # Admin route for showing all users in DB
 @admin.route('/users', methods=['GET', 'POST'])
 def admin_users():
-    users = User.query.order_by(User.id)
+    users = db.session.scalars(db.select(User).order_by(User.id))
     return render_template('admin_users.html', users=users)
 
 
 # Admin route for showing all players in DB
 @admin.route('/players', methods=['GET', 'POST'])
 def admin_players():
-    players = Player.query.order_by(Player.id)
+    players = db.session.scalars(db.select(Player).order_by(Player.id))
     return render_template('admin_players.html', players=players)
 
 
 # Admin route for showing all pokemon in DB
 @admin.route('/pokemon', methods=['GET', 'POST'])
 def admin_pokemon():
-    pokemon = Pokemon.query.order_by(Pokemon.id)
-    return render_template('admin_pokemon.html', pokemon=pokemon)
+    pokemons = db.session.scalars(db.select(Pokemon).order_by(Pokemon.id))
+    return render_template('admin_pokemon.html', pokemon=pokemons)
 
 
 # Admin route for deleting pokemon and any pokemon linked to said pokemon
 @admin.route('/pokemon/delete/<int:mon_id>', methods=['POST'])
 @login_required
 def admin_delete_pokemon(mon_id):
-    link_id = Pokemon.query.get_or_404(mon_id).link_id
-    session_id = Pokemon.query.get_or_404(mon_id).player.session.id
-    for player in Player.query.filter_by(session_id=session_id):
-        pokemon_to_delete = Pokemon.query.filter_by(link_id=link_id, player_id=player.id).first()
-        try:
-            db.session.delete(pokemon_to_delete)
-            db.session.commit()
-            print("Problem deleting pokemon")
-        except:
-            print("Pokemon for this player does not exist")
+    selection = db.session.scalar(db.select(Pokemon).where(Pokemon.id==mon_id))
+    link_id = selection.link_id
+    selection_save = selection.player.saves
+    pokemon_to_delete = db.session.scalars(db.select(Pokemon).join(Pokemon.player).where(Pokemon.link_id==link_id, Player.saves==selection_save))
+    db.session.delete(pokemon_to_delete)
+    db.session.commit()
     return redirect('/admin/pokemon')
 
 
@@ -80,17 +71,13 @@ def admin_pokedex():
     numberform = SearchNumberForm()
     speciesform = SearchSpeciesForm()
     if speciesform.validate_on_submit():
-        search_results = Pokedex.query.filter_by(species=speciesform.species.data)
+        search_results = db.session.scalars(db.select(Pokedex).where(Pokedex.species==speciesform.species.data))
         speciesform.species.data = ''
         return render_template('admin_pokedex.html', speciesform=speciesform, numberform=numberform, search_results=search_results)
     if numberform.validate_on_submit():
-        search_results = Pokedex.query.filter_by(number=numberform.number.data)
+        search_results = db.session.scalars(db.select(Pokedex).where(Pokedex.number==numberform.number.data))
+        print(search_results)
         numberform.number.data = ''
         return render_template('admin_pokedex.html', speciesform=speciesform, numberform=numberform, search_results=search_results)
     return render_template('admin_pokedex.html', speciesform=speciesform, numberform=numberform)
 
-
-@admin.route('/test1/', methods=['GET', 'POST'])
-@login_required
-def admin_test1():
-    return redirect(url_for('main.view_session'))

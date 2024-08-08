@@ -1,7 +1,7 @@
 {% extends 'layout.html' %}
 
 {% block title %}
-    Create Session
+    Create Save
 {% endblock %}
 
 {% block jscript %}
@@ -23,12 +23,12 @@
 {% endblock %}
 
 {% block header %}
-    Create Session
+    Create Save
 {% endblock %}
 
 {% block main %}
 <div class="shadow p-3 mb-5 bg-body-tertiary rounded">
-    <form method="POST" action="/session/create">
+    <form method="POST" action="/save/create">
         {{ form.hidden_tag() }}
         {{ form.player_num.label(class="form-label") }}
         {{ form.player_num(class="form-control") }}

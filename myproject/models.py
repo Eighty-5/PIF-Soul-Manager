@@ -1,7 +1,8 @@
 from .extensions import db
 from flask_login import UserMixin
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import String, ForeignKey
+from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy import String, ForeignKey, func
 from typing import Optional
 
 # Models
@@ -32,6 +33,9 @@ class Save(db.Model):
     players: Mapped[list["Player"]] = relationship(back_populates="saves", cascade="all, delete")
     users: Mapped["User"] = relationship(back_populates="saves")
 
+    def player_count(self):
+        return db.session.scalar(db.select(func.count("*")).select_from(Player).where(Player.saves==self))
+
     def __repr__(self) -> str:
         return f"Save(number={self.number!r}, user={self.users.username!r})"
 
@@ -47,6 +51,9 @@ class Player(db.Model):
     
     pokemons: Mapped[list["Pokemon"]] = relationship(back_populates="player", cascade="all, delete")
     saves: Mapped["Save"] = relationship(back_populates="players", foreign_keys=[save_id])
+
+    def party_length(self):
+        return db.session.scalar(db.select(func.count("*")).select_from(Pokemon).where(Pokemon.player==self, Pokemon.position=="party"))
 
     def __repr__(self) -> str:
         return f"Player(number={self.number!r}, name={self.name!r}, user={self.saves.users.username!r})"
@@ -101,6 +108,15 @@ class Pokedex(db.Model):
     fusions_body: Mapped[list["Pokedex"]] = relationship(back_populates="body", remote_side=[body_id], foreign_keys=[body_id], cascade="all, delete-orphan")
     stats: Mapped["PokedexStats"] = relationship(back_populates="info", cascade="all, delete-orphan")
     sprites: Mapped[list["Sprite"]] = relationship(back_populates="pokedex_info", cascade="all, delete-orphan")
+
+    def evolutions(self) -> str:
+        return db.session.scalars(db.select(Pokedex).where(Pokedex.family==self.family).order_by(Pokedex.family_order))
+
+    def split_names(self) -> str:
+        if self.head:
+            return self.species
+        else:
+            return f"{self.head.species} + {self.body.species}"
 
     def __repr__(self) -> str:
         if self.head:

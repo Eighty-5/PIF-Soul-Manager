@@ -14,10 +14,10 @@
             </li> -->
             <!-- If a user is logged in  -->
             {% if current_user.is_authenticated %}
-                {% if request.path == "/session_manager" %}
+                {% if request.path == "/save_manager" %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        Change Session
+                        Change Save
                         </a>
                         <ul class="dropdown-menu">
                         <li><a class="dropdown-item" href="#">Action</a></li>
@@ -27,22 +27,22 @@
                         </ul>
                     </li>
                 {% endif %}
-                <!-- If a current session is listed in DB (usually not only after login) -->
-                {% if current_user.current_session %}
+                <!-- If a current save is listed in DB (usually not only after login) -->
+                {% if current_user.current_save %}
                     <li class="nav-item">
-                        <a class="nav-link active" aria-current="page" href="/session/view">View Current Session</a>
+                        <a class="nav-link active" aria-current="page" href="/save/view">View Current Save</a>
                     </li>
                 {% endif %}
-                <!-- If user has no sessions remove 'Change Session' navbar item -->
-                {% if not current_user.sessions|length == 0 %}
+                <!-- If user has no saves remove 'Change save' navbar item -->
+                {% if not current_user.saves|length == 0 %}
                     <li class="nav-item">
-                        <a class="nav-link active" aria-current="page" href="/session/select">Change Session</a>
+                        <a class="nav-link active" aria-current="page" href="/save/select">Change Save</a>
                     </li>
                 {% endif %}
-                <!-- Removes create session navbar item if user is a max sessions -->
-                {% if current_user.sessions|length < 3 %}
+                <!-- Removes create save navbar item if user is a max saves -->
+                {% if current_user.saves|length < 3 %}
                     <li class="nav-item">
-                        <a class="nav-link active" aria-current="page" href="/session/create">Create New Session</a>
+                        <a class="nav-link active" aria-current="page" href="/save/create">Create New Save</a>
                     </li>
                 {% endif %}
                 <li class="nav-item">

@@ -3,11 +3,11 @@ from flask_login import login_required, current_user
 
 from ...extensions import db
 from ...models import User, Player, Pokedex, Pokemon, Save, Artist
-from ...webforms import CreateSessionForm
-from .main_utils import find_first_missing_session_number, get_column_widths
+from ...webforms import CreateSaveForm
+from .main_utils import find_first_missing_save_number, get_column_widths
 from ...utils import get_default_vars
 from ..pokemon.pokemon import MANUAL_RULESET, AUTO_RULESET, ROUTE_RULESET, SPECIAL_RULESET
-from sqlalchemy import and_
+from sqlalchemy import func
 
 main = Blueprint('main', __name__, template_folder='templates', static_folder='static', static_url_path='/main/static')
 
@@ -18,142 +18,115 @@ def index():
 
 
 # Create a New Save route
-@main.route('/session/create', methods=['GET', 'POST'])
+@main.route('/save/create', methods=['GET', 'POST'])
 @login_required
-def create_session():
+def create_save():
 
     # Set variables
-    form = CreateSessionForm()
-    id = current_user.id
-    sessions = Save.query.filter(Save.user_id==id)
-        
-    # If session count is >=3 return them to the session select page
-    if Save.count() >= 3:
-        flash("Already at max session count. Please delete one of your sessions to add another")
-        return redirect(url_for('main.select_session'))
+    form = CreateSaveForm()
+    # If save count is >=3 return them to the save select page
+    if db.session.scalar(db.select(func.count("*")).select_from(User).where(Save.users==current_user)) >= 3:
+        flash("Already at max save count. Please delete one of your saves to add another")
+        return redirect(url_for('main.select_save'))
     players = [{'Player 1': 'Player 1 Name'},
                {'Player 2': 'Player 2 Name'},
                {'Player 3': 'Player 3 Name'},
                {'Player 4': 'Player 4 Name'}]
-    form = CreateSessionForm(player_names=players)
+    form = CreateSaveForm(player_names=players)
 
     # Validate that form was submited
     if form.validate_on_submit():
-        session_num_lst = [session.number for session in sessions]
+        saves = db.session.scalars(db.select(Save).where(Save.users==current_user))
+        save_num_lst = [save.number for save in saves]
         ruleset=int(form.ruleset.data)
         route_tracking = True if ruleset != 1 else False
-        if len(session_num_lst) < 3:
-            new_session_num = find_first_missing_session_number(session_num_lst)
-            if not new_session_num == False:
-                new_session = Save(user_id=id, number=new_session_num, ruleset=int(form.ruleset.data), route_tracking=route_tracking)
-                db.session.add(new_session)
-                db.session.commit()
+        if len(save_num_lst) < 3:
+            new_save_num = find_first_missing_save_number(save_num_lst)
+            if not new_save_num == False:
+                new_save = Save(number=new_save_num, ruleset=int(form.ruleset.data), route_tracking=route_tracking, users=current_user)
+                db.session.add(new_save)
                 player_count = 1
                 for player in form.player_names:
                     if player.player_name.data:
-                        new_player = Player(session_id=new_session.id, number=player_count, name=player.player_name.data)
+                        new_player = Player(number=player_count, name=player.player_name.data, saves=new_save)
                         db.session.add(new_player)
-                        db.session.commit()
                         player_count = player_count + 1
+                db.session.commit()
                 flash("Save Added Successfully")
-                return redirect('/session/select')
+                return redirect('/save/select')
         
-        flash("Already at max session count. Please delete one of your sessions to add another")
-        return redirect('/session/select')
+        flash("Already at max save count. Please delete one of your saves to add another")
+        return redirect('/save/select')
     form.player_num.data = ""
     for player in form.player_names:
         player.player_name.data = ""
     form.ruleset.data = ""
-    return render_template('create_session.html', form=form)
+    return render_template('create_save.html', form=form)
 
 
 # Delete a Save route
-@main.route('/session/delete', methods=['GET', 'POST'])
+@main.route('/save/delete', methods=['GET', 'POST'])
 @login_required
-def delete_session():
+def delete_save():
     id = current_user.id
     if request.method == 'POST':
-        session_number = request.form['session_to_delete']
-        session_to_delete = Save.query.filter_by(user_id=id, number=session_number).first()
-    if id == session_to_delete.user.id or current_user.id == 1:
-        db.session.delete(session_to_delete)
+        save_number = request.form['save_to_delete']
+        save_to_delete = db.session.scalar(db.select(Save).where(Save.users==current_user, Save.number==save_number))
+    if id == save_to_delete.users.id or current_user.id == 1:
+        db.session.delete(save_to_delete)
         db.session.commit()
-        if User.query.get(id).current_session == session_number:
-            User.query.get(id).current_session = None
-            db.session.commit()
         if current_user.id == 1:
-            return redirect('/admin/sessions')
+            return redirect('/admin/saves')
         else:
-            return redirect('/session/select')
+            return redirect('/save/select')
     else:
-        flash("You do not have authorization to delete this session")
-        return redirect('/session/select')
+        flash("You do not have authorization to delete this save")
+        return redirect('/save/select')
     
 
-@main.route('/session/select/', methods=['GET', 'POST'])
+@main.route('/save/select/', methods=['GET', 'POST'])
 @login_required
-def select_session():
-    id = current_user.id
-    sessions = Save.query.filter_by(user_id=id).order_by(Save.number)
-    if Save.query.filter_by(user_id=id).first() == None:
-            flash("Please Create a Save First")
-            return redirect(url_for('main.create_session')) 
+def select_save():
+    saves = db.session.scalars(db.select(Save).where(Save.users==current_user))
+    if not saves:
+        flash("Please Create a Save First")
+        return redirect(url_for('main.create_save')) 
     if request.method == 'POST':
-        current_session_to_update = User.query.get_or_404(id)
-        current_session_id = Save.query.filter_by(user_id=id, number=request.form['session_number']).first().id
-        current_session_to_update.current_session = current_session_id
+        current_save = db.session.scalar(db.select(Save).where(Save.users==current_user, Save.current==True))
+        new_current_save = db.session.scalar(db.select(Save).where(Save.users==current_user, Save.number==request.form['save_number']))
+        if current_save:
+            current_save.current = False
+        new_current_save.current = True
         db.session.commit()
-        return redirect(url_for('main.view_session'))
-    return render_template('select_session.html', sessions=sessions)
+        return redirect(url_for('main.view_save'))
+    return render_template('select_save.html', saves=saves)
 
 
 # Redirect to Save Manager for Navbar
-@main.route('/session/view', methods=['GET', 'POST'])
+@main.route('/save/view', methods=['GET', 'POST'])
 @login_required
-def view_session():
-    current_session_id = User.query.get(current_user.id).current_session
-    try:
-        current_session_num = Save.query.get(current_session_id).number
-        return redirect(url_for('main.session_manager', session_num=current_session_num))
-    except AttributeError:
+def view_save():
+    current_save = db.session.scalar(db.select(Save).where(Save.users==current_user, Save.current==True))
+    if current_save:
+        return redirect(url_for('main.save_manager', save_num=current_save.number))
+    else:
         flash("Please Select a Save to View")
-        return redirect(url_for('main.select_session'))
+        return redirect(url_for('main.select_save'))
 
 
-@main.route('/session/<int:session_num>', methods=['GET', 'POST'])
+@main.route('/save/<int:save_num>', methods=['GET', 'POST'])
 @login_required
-def session_manager(session_num):
-    id = current_user.id
-    session = Save.query.filter(Save.user_id==id, Save.number==session_num).first()
-    if session is None:
-        flash("No record of that session")
-        return redirect(url_for('main.select_session'))
-    players = Player.query.filter(Player.session_id==session.id)
-    party_length = Pokemon.query.filter(Pokemon.player_id==players.first().id, Pokemon.position=='party').count()
-    column_widths = get_column_widths(players.count())
-
-    # Evolutions
-    evolutions_dict = {}
-    for player in players:
-        for pokemon in player.pokemon:
-            evolution_lst = []
-            evolutions = Pokedex.query.filter_by(family=pokemon.info.family).order_by(Pokedex.family_order)
-            for evolution in evolutions:
-                base_pokemon_1 = Pokedex.query.filter_by(number=evolution.base_id_1).first()
-                base_pokemon_2 = Pokedex.query.filter_by(number=evolution.base_id_2).first() 
-                if base_pokemon_1 is not None:
-                    evo_names = f"{base_pokemon_1.species} + {base_pokemon_2.species}"
-                    evo_number = evolution.number
-                else:
-                    evo_names = evolution.species
-                    evo_number = evolution.number
-                evolution_lst.append({'number':evo_number, 'names':evo_names})
-            evolutions_dict[pokemon.pokedex_number] = evolution_lst
-            
-    return render_template('session_manager.html', 
-                           session_num=session_num, 
-                           session=session, 
-                           evolutions_dict=evolutions_dict,  
+def save_manager(save_num):
+    current_save = db.session.scalar(db.select(Save).where(Save.users==current_user, Save.current==True))
+    save_check = db.session.scalar(db.select(Save).where(Save.users==current_user, Save.number==save_num))
+    if save_check is None:
+        flash("No record of that save")
+        return redirect(url_for('main.select_save'))
+    party_length = db.session.scalar(db.select(Player).where(Player.saves==current_save, Player.number==1)).party_length()   
+    column_widths = get_column_widths(current_save.player_count())
+    return render_template('save_manager.html', 
+                           save_num=current_save.number, 
+                           save=current_save,  
                            party_length=party_length,
                            column_widths=column_widths)
 
@@ -161,18 +134,20 @@ def session_manager(session_num):
 @main.route('/preview_fusions/<int:player_num>/<int:link_id>', methods=['GET', 'POST'])
 @login_required
 def preview_fusions(player_num, link_id):
-    current_session, current_session_id, ruleset = get_default_vars(current_user.id)
-    selected_player = Player.query.join(Save).filter(Save.id == current_session_id, Player.number == player_num).first()
-    selected_pokemon = Pokemon.query.join(Save.players).join(Player.pokemon).filter(Save.id == current_session_id, Player.number == player_num, Pokemon.link_id == link_id).first()
+    current_save = db.session.scalar(db.select(Save).where(Save.users==current_user, Save.current==True))
+    ruleset = current_save.ruleset
+    selected_player = db.session.scalar(db.select(Player).where(Player.saves==current_save, Player.number==player_num))
+    selected_pokemon = db.session.scalar(db.select(Pokemon).where(Pokemon.link_id==link_id, Pokemon.player==selected_player))
     if ruleset != ROUTE_RULESET:
-        possible_partners = Pokemon.query.join(Save.players).join(Player.pokemon).join(Pokedex).filter(Save.id == current_session_id, Player.number == player_num, Pokemon.link_id != link_id, Pokemon.position != 'dead').filter(Pokedex.base_id_2 == None)
+        possible_partners = db.session.scalars(db.select(Pokemon).join(Pokemon.player, Pokemon.info).where(Pokemon.link_id!=link_id, Pokemon.player==selected_player, Pokedex.head==None, Pokemon.position!='dead'))
     elif ruleset == ROUTE_RULESET:
-        possible_partners = Pokemon.query.join(Save.players).join(Player.pokemon).join(Pokedex).filter(Save.id == current_session_id, Player.number == player_num, Pokemon.link_id != link_id, Pokemon.position != 'dead', Pokemon.route == selected_pokemon.route).filter(Pokedex.base_id_2 == None)
+        possible_partners = db.session.scalars(db.select(Pokemon).join(Pokemon.player, Pokemon.info).where(Pokemon.link_id!=link_id, Pokemon.player==selected_player, Pokedex.head==None, Pokemon.position!='dead', Pokemon.route==selected_pokemon.route))
+        # possible_partners = Pokemon.query.join(Save.players).join(Player.pokemon).join(Pokedex).filter(Save.id == current_save_id, Player.number == player_num, Pokemon.link_id != link_id, Pokemon.position != 'dead', Pokemon.route == selected_pokemon.route).filter(Pokedex.base_id_2 == None)
     if ruleset == MANUAL_RULESET:
-        flash(f"Since session is using Full Freedom Ruleset possible fusions shown only for {selected_player.name}")
+        flash(f"Since save is using Full Freedom Ruleset possible fusions shown only for {selected_player.name}")
         players = [selected_player]
     else:
-        players = current_session.players
+        players = current_save.players
     column_widths = get_column_widths(len(players))
     master_dict = {}
     for partner in possible_partners:

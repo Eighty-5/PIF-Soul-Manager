@@ -1,7 +1,7 @@
 {% extends 'layout.html' %}
 
 {% block title %}
-    Session Select
+    Save Select
 {% endblock %}
 
 {% block main %}
@@ -10,8 +10,8 @@
         <td class="title">Player ID</td>
         <td class="title">Player Name</td>
         <td class="title">Player Number</td>
-        <td class="title">Session Id</td>
-        <td class="title">Session Number</td>
+        <td class="title">Save Id</td>
+        <td class="title">Save Number</td>
         <td class="title">User ID</td>
         <td class="title">Username</td>
     </tr>
@@ -20,10 +20,10 @@
             <td>{{ player.id }}</td>
             <td>{{ player.name }}</td>
             <td>{{ player.number }}</td>
-            <td>{{ player.session.id }}</td>
-            <td>{{ player.session.number }}</td>
-            <td>{{ player.session.user.id }}</td>
-            <td>{{ player.session.user.username }}</td>
+            <td>{{ player.saves.id }}</td>
+            <td>{{ player.saves.number }}</td>
+            <td>{{ player.saves.users.id }}</td>
+            <td>{{ player.saves.users.username }}</td>
         </tr>
     {% endfor %}
 </table>

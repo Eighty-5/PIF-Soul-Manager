@@ -1,11 +1,11 @@
 {% extends 'layout.html' %}
 
 {% block title %}
-    Session {{ session_num }}
+    Save {{ save_num }}
 {% endblock %}
 
 {% block header %}
-    Session {{ session.number }} Manager - Ruleset {{ session.ruleset }}
+    Save {{ save.number }} Manager - Ruleset {{ save.ruleset }}
 {% endblock %}
 
 {% block main %}
@@ -14,17 +14,17 @@
   <div class="accordion-item">
     <h2 class="accordion-header" id="headingOne">
       <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
-        <h3>Add Pokemon To Session</h3>
+        <h3>Add Pokemon To Save</h3>
       </button>
     </h2>
     <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne">
       <div class="accordion-body">
         <form action="{{ url_for('pokemon.add_pokemon')}}" method="post">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-          {% for player in session.players %}
+          {% for player in save.players %}
             <input name="{{ player.number }}" list="pokedex" class="form-control" placeholder="{{ player.name }}'s new pokemon" autocomplete="off" tabindex="1" style="max-width:300px">
           {% endfor %}
-          {% if session.route_tracking %}
+          {% if save.route_tracking %}
             <select class="form-select" name="route" id="RouteSelect" tabindex="2" aria-label="Default select example">
               <option disabled selected>Select Route...</option>
               {% include 'route_list.html' %}
@@ -52,7 +52,7 @@
       <div class="accordion-body">
         <form action="{{ url_for('pokemon.fuse_pokemon')}}" method="post">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-          {% for player in session.players %}
+          {% for player in save.players %}
             <div>
               <h3>{{ player.name }}</h3>
               {% for part in ["Head", "Body"] %}
@@ -82,16 +82,16 @@
     <div id="collapseThree" class="accordion-collapse collapse show" aria-labelledby="headingThree">
       <div class="accordion-body container-fluid">
         <div class="row">
-          {% for player in session.players %}
+          {% for player in save.players %}
           <div class="col-lg-{{ column_widths['player_column'] }}">
             <h2 style="text-align:center">{{ player.name }}</h2>
-            {% for mon in player.pokemon|sort(attribute='link_id')|sort(reverse=true, attribute='linked') if mon.position == "party" %}
+            {% for mon in player.pokemons|sort(attribute='link_id')|sort(reverse=true, attribute='linked') if mon.position == "party" %}
               <div class="row shadow p-1 mb-1 bg-body-tertiary">
                 <!-- Pokemon Name and Typing -->
                 <h4 style="text-align: center; margin-bottom: 0px;">
                   {{ mon.info.species }}
-                    {% if mon.info.base_id_2 %}
-                    - ({{ mon.info.pokedex_base_1.species }} + {{ mon.info.pokedex_base_2.species }})
+                    {% if mon.info.body %}
+                    - ({{ mon.info.head.species }} + {{ mon.info.body.species }})
                     {% endif %}
                 </h4>
                 <h5 style="text-align: center; margin-bottom: 10px;">
@@ -110,9 +110,9 @@
                       <div class="input-group mb-1">
                         <select class="form-select" id="inputGroupSelect03" aria-label="Example select with button addon" name="evolve_{{ player.number }}_{{ mon.link_id }}">
                           <option selected disabled>Evolve to...</option>
-                          {% for evo in evolutions_dict[mon.pokedex_number] %}
-                            {% if evo['number'] != mon.pokedex_number %}
-                              <option value="{{ evo['number'] }}">{{ evo['names'] }}</option>
+                          {% for evo in mon.info.evolutions() %}
+                            {% if evo.number != mon.info.number %}
+                              <option value="{{ evo.number }}">{{ evo.species }}</option>
                             {% endif %}
                           {% endfor %}
                         </select>
@@ -126,7 +126,7 @@
                         <select class="form-select" id="inputGroupSelect03" aria-label="Example select with button addon" name="switch_with">
                           <option selected disabled>Switch with Box...</option>
                           <option value="addbox">Send to Box</option>
-                          {% for pokemon in player.pokemon %}
+                          {% for pokemon in player.pokemons %}
                             {% if pokemon.position == "box" %}
                               <option value="{{ pokemon.link_id }}">{{ pokemon.info.species }}</option>
                             {% endif %}
@@ -141,18 +141,18 @@
                       <div class="input-group mb-1">
                         <select class="form-select" id="inputGroupSelect03" aria-label="Example select with button addon" name="variant_select">
                           <option selected disabled>Sprite Variants</option>
-                          {% for variant in mon.info.artists %}
-                            {% if variant.variant_let == '-' %}
+                          {% for sprite in mon.info.sprites %}
+                            {% if sprite.variant_let == '' %}
                               <option value="default">Default</option>
                             {% else %}
-                              <option value="{{ variant.variant_let }}">{{ variant.variant_let.upper() }}</option>
+                              <option value="{{ sprite.variant_let }}">{{ sprite.variant_let.upper() }}</option>
                             {% endif %}
                           {% endfor %}
                         </select>
                         <button class="btn btn-secondary" type="submit">Switch</button>
                       </div>
                     </form>
-                    {% if session.ruleset == 1 %}
+                    {% if save.ruleset == 1 %}
                       <div><!-- Link -->
                         {% if mon.linked %} 
                           <form action="{{ url_for('pokemon.unlink_pokemon', player_num=player.number, link_id=mon.link_id) }}" method="post">
@@ -164,7 +164,7 @@
                           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                           <select name="link_with">
                             <option selected disabled>Link with ...</option>
-                            {% for other_players in session.players %}
+                            {% for other_players in save.players %}
                               {% if other_players.id != player.id %}
                                 {% for other_pokemon in other_players.pokemon %}
                                   {% if other_pokemon.link_id != mon.link_id %}
@@ -184,7 +184,7 @@
                       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                       <button type="button submit" class="btn btn-danger">Faint</button>
                     </form>
-                    {% if not mon.info.base_id_2 %}
+                    {% if not mon.info.body %}
                       <!-- Preview Fusions -->
                       <form action="{{ url_for('main.preview_fusions', player_num=player.number, link_id=mon.link_id) }}" method="post" style="display: inline-block;">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
@@ -202,10 +202,10 @@
                   <div class="col-md-6">
                     <div><img class="mx-auto d-block" src="{{ url_for('main.static', filename='images/sprites/' ~ mon.info.base_id_1 ~ '/' ~ mon.sprite ~ '.nosprite') }}" onerror="this.onerror=null; this.src='/main/static/images/sprites/default/default.png'" width="150" height="150"></div>
                     <!-- <div>
-                      artist: {{ mon.artist.artist }}
+                      artist: {{ mon.info.artists }}
                       <br>
-                      {% if mon.artist.variant_let != '-' %}
-                        sprite variant: {{ mon.artist.variant_let.upper() }}
+                      {% if mon.sprite.variant_let != '' %}
+                        sprite variant: {{ mon.sprite.variant_let.upper() }}
                       {% endif %}
                     </div> -->
                   </div>
@@ -229,17 +229,17 @@
     <div id="collapseFour" class="accordion-collapse collapse show" aria-labelledby="headingFour">
       <div class="accordion-body container-fluid">
         <div class="row">
-          {% for player in session.players %}
+          {% for player in save.players %}
             <div class="col-md-{{ column_widths['player_column'] }}">
               <h2 style="text-align:center">{{ player.name }}</h2>
-              {% for mon in player.pokemon|sort(attribute='link_id')|sort(reverse=true, attribute='linked') %}
+              {% for mon in player.pokemons|sort(attribute='link_id')|sort(reverse=true, attribute='linked') %}
                 {% if mon.position == "box" %}
                   <div class="row shadow p-1 mb-1 bg-body-tertiary">
                     <!-- Pokemon Name and Typing -->
                     <h4 style="text-align: center; margin-bottom: 0px;">
                       {{ mon.info.species }}
-                        {% if mon.info.base_id_2 %}
-                        - ({{ mon.info.pokedex_base_1.species }} + {{ mon.info.pokedex_base_2.species }})
+                        {% if mon.info.body %}
+                        - ({{ mon.info.head.species }} + {{ mon.info.body.species }})
                         {% endif %}
                     </h4>
                     <h5 style="text-align: center; margin-bottom: 10px;">
@@ -256,9 +256,9 @@
                         <div class="input-group mb-1">
                           <select class="form-select" id="inputGroupSelect03" aria-label="Example select with button addon" name="evolve_{{ player.number }}_{{ mon.link_id }}">
                             <option selected disabled>Evolve to...</option>
-                            {% for evo in evolutions_dict[mon.pokedex_number] %}
-                              {% if evo['number'] != mon.pokedex_number %}
-                                <option value="{{ evo['number'] }}">{{ evo['names'] }}</option>
+                            {% for evo in mon.info.evolutions() %}
+                              {% if evo.number != mon.info.number %}
+                                <option value="{{ evo.number }}">{{ evo.species }}</option>
                               {% endif %}
                             {% endfor %}
                           </select>
@@ -274,7 +274,7 @@
                             {% if party_length < 6 %}
                               <option value="addparty">Add to Party</option>
                             {% endif %}
-                            {% for pokemon in player.pokemon %}
+                            {% for pokemon in player.pokemons %}
                               {% if pokemon.position == "party" %}
                                 <option value="{{ pokemon.link_id }}">{{ pokemon.info.species }}</option>
                               {% endif %}
@@ -289,18 +289,18 @@
                         <div class="input-group mb-1">
                           <select class="form-select" id="inputGroupSelect03" aria-label="Example select with button addon" name="variant_select">
                             <option selected disabled>Sprite Variants</option>
-                            {% for variant in mon.info.artists %}
-                              {% if variant.variant_let == '-' %}
+                            {% for sprite in mon.info.sprites %}
+                              {% if sprite.variant_let == '' %}
                                 <option value="default">Default</option>
                               {% else %}
-                                <option value="{{ variant.variant_let }}">{{ variant.variant_let.upper() }}</option>
+                                <option value="{{ sprite.variant_let }}">{{ sprite.variant_let.upper() }}</option>
                               {% endif %}
                             {% endfor %}
                           </select>
                           <button class="btn btn-secondary" type="submit">Switch</button>
                         </div>
                       </form><!-- Link -->
-                      {% if session.ruleset == 1 %}
+                      {% if save.ruleset == 1 %}
                         {% if mon.linked %} 
                           <form action="{{ url_for('pokemon.unlink_pokemon', player_num=player.number, link_id=mon.link_id) }}" method="post" style="display: inline-block;">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
@@ -312,7 +312,7 @@
                             <div class="input-group mb-1">
                               <select class="form-select" id="inputGroupSelect03" aria-label="Example select with button addon" name="link_with">
                                 <option selected disabled>Link with ...</option>
-                                {% for other_players in session.players %}
+                                {% for other_players in save.players %}
                                   {% if other_players.id != player.id %}
                                     {% for other_pokemon in other_players.pokemon %}
                                       {% if other_pokemon.link_id != mon.link_id %}
@@ -349,12 +349,12 @@
                     <!-- Right Side -->
                     <!-- Sprite -->
                     <div class="col-md-6">
-                      <div><img class="mx-auto d-block" src="{{ url_for('main.static', filename='images/sprites/' ~ mon.info.base_id_1 ~ '/' ~ mon.sprite ~ '.nosprite') }}" onerror="this.onerror=null; this.src='/main/static/images/sprites/default/default.png'" width="150" height="150"></div>
+                      <div><img class="mx-auto d-block" src="{{ url_for('main.static', filename='images/sprites/' ~ mon.info.head.number ~ '/' ~ mon.sprite ~ '.nosprite') }}" onerror="this.onerror=null; this.src='/main/static/images/sprites/default/default.png'" width="150" height="150"></div>
                       <!-- <div>
-                        artist: {{ mon.artist.artist }}
+                        artist: {{ mon.sprite.artists }}
                         <br>
-                        {% if mon.artist.variant_let != '-' %}
-                          sprite variant: {{ mon.artist.variant_let.upper() }}
+                        {% if mon.sprite.variant_let != '' %}
+                          sprite variant: {{ mon.sprite.variant_let.upper() }}
                         {% endif %}
                       </div> -->
                     </div>
@@ -378,16 +378,16 @@
     <div id="collapseFive" class="accordion-collapse collapse" aria-labelledby="headingFive">
       <div class="accordion-body container-fluid">
         <div class="row shadow p-1 mb-1 bg-body-tertiary">
-          {% for player in session.players %}
+          {% for player in save.players %}
             <div class="col-lg-{{ column_widths['player_column'] }}">
               <h2 style="text-align:center">{{ player.name }}</h2>
-              {% for mon in player.pokemon %}
+              {% for mon in player.pokemons %}
                 {% if mon.position == "dead" %}
                   <div class="row">
                     <h4 style="text-align: center;">
                       {{ mon.info.species }}
-                        {% if mon.info.base_id_2 %}
-                        - ({{ mon.info.base_1.species }} + {{ mon.info.base_2.species }})
+                        {% if mon.info.body %}
+                        - ({{ mon.info.head.species }} + {{ mon.info.body.species }})
                         {% endif %}
                     </h4>
                     <h5 style="text-align: center;">
@@ -407,7 +407,7 @@
                       <div>
                         <form action="{{ url_for('pokemon.delete_pokemon', link_id=mon.link_id) }}" method="post">
                           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                          <button type="submit submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this Pokemon from this session?')">Delete</button>
+                          <button type="submit submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this Pokemon from this save?')">Delete</button>
                         </form>
                       </div>
                     </div>
@@ -418,11 +418,7 @@
                         <img class="mx-auto d-block" src="{{ url_for('main.static', filename='images/sprites/' ~ mon.info.base_id_1 ~ '/' ~ mon.sprite ~ '.nosprite') }}" onerror="this.onerror=null; this.src='/main/static/images/sprites/default/default.png'" width="150" height="150">
                       </div>
                       <!-- <div>
-                        artist: {{ mon.artist.artist }}
-                        <br>
-                        {% if mon.artist.variant_let != '-' %}
-                          sprite variant: {{ mon.artist.variant_let.upper() }}
-                        {% endif %}
+                        artist: {{ mon.sprite.artists }}
                       </div> -->
                     </div>
                   </div>

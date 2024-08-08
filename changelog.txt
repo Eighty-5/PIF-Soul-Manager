@@ -74,4 +74,6 @@ Sprites no longer show up in preparation for deployment
 6_8_2024
 Application now utilizes SQLAlchemy 2.0 ORM features
 Updater is now more optimized and updated for new SQLAlchemy framework
+Removed any unnecessary files for updater in pokedex_stuff subdirectory
+Changed "session" to "save" throughout to reduce confusion between user sessions vs application/database sessions
 

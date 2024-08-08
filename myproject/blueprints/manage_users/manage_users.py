@@ -5,7 +5,7 @@ from sqlalchemy import select, create_engine
 from sqlalchemy.orm import Session
 
 from ...extensions import db
-from ...models import User, Player
+from ...models import User, Player, Save
 from ...webforms import LoginForm, RegisterForm
 
 manage_users = Blueprint('manage_users', __name__, template_folder='templates')
@@ -25,7 +25,7 @@ def login():
             if check_password_hash(user.hash, form.password.data):
                 login_user(user)
                 flash("Login Successful!")
-                return redirect(url_for('main.select_session'))
+                return redirect(url_for('main.select_save'))
             else:
                 flash("Incorrect Username/Password - Please Try Again")
         else:
@@ -38,7 +38,8 @@ def login():
 @manage_users.route('/logout', methods=['GET', 'POST'])
 @login_required
 def logout():
-    User.query.get_or_404(current_user.id).current_session = None
+    current_save = db.session.scalar(db.select(Save).where(Save.users==current_user, Save.current==True))
+    current_save.current = False
     db.session.commit()
     logout_user()
     flash("You have been Logged Out Successfully!")
