@@ -29,8 +29,8 @@ def add_pokemon():
         try:
             route = request.form['route']
             max_num = 1 if ruleset == 2 else 2
-            db.session.scalar(db.select(func.count("*")).select_from(Pokemon).join(Pokemon.players).where(Player.saves==current_save))
-            if not db.session.scalar(db.select(func.count("*")).select_from(Pokemon).join(Pokemon.players).where(Player.saves==current_save)) < max_num * len(current_save.players):
+            route_check = db.session.scalar(db.select(func.count("*")).select_from(Pokemon).join(Pokemon.player).where(Player.saves==current_save, Pokemon.route==route))
+            if not route_check < max_num * len(current_save.players):
                 flash("Maximum Pokemon caught for that route. Please choose another")
                 return redirect(url_for('main.view_save'))
         except KeyError:
@@ -78,11 +78,10 @@ def add_pokemon():
 @pokemon.route('/add/random', methods=['POST'])
 @login_required
 def add_random():
-    current_save = db.session.scalar(db.select(Save).where(Save.users==current_user))
+    current_save = db.session.scalar(db.select(Save).where(Save.users==current_user, Save.current==True))
     ruleset = current_save.ruleset
-    current_save_id = current_save.id
     link_id = get_new_link_id(current_save.id)
-    taken_routes = [r.route for r in Pokemon.query.join(Save.players).join(Player.pokemons).filter(Save.id == current_save_id, Player.number == 1)]
+    taken_routes = [r.route for r in Pokemon.query.join(Save.players).join(Player.pokemons).filter(Save.id == current_save.id, Player.number == 1)]
     rand_route = random.randrange(1, 100)
     if ruleset == 2:
         while taken_routes.count(rand_route) >= 1:
@@ -94,11 +93,11 @@ def add_random():
     added_pokemon_lst = []
     for player in current_save.players:
         if ruleset == MANUAL_RULESET:
-            link_id, linked, rand_route = get_new_link_id(current_save_id), False, None
+            link_id, linked, rand_route = get_new_link_id(current_save.id), False, None
         elif ruleset in AUTO_RULESET:
             linked = True
         elif ruleset in [ROUTE_RULESET, SPECIAL_RULESET]:
-            link_id, linked = get_new_link_id(current_save_id), False
+            link_id, linked = get_new_link_id(current_save.id), False
         rand_pokedex_number = random.randrange
         rand_pokedex_number = random.randrange(1, db.session.scalar(db.select(func.count("*")).select_from(Pokedex).where(Pokedex.head_id==None)))
         print(rand_pokedex_number)
@@ -124,22 +123,21 @@ def add_random():
 @pokemon.route('/variant/<player_num>/<link_id>', methods=['POST'])
 @login_required
 def change_variant(player_num, link_id):
-    current_save = db.session.scalar(db.select(Save).where(Save.users==current_user))
+    current_save = db.session.scalar(db.select(Save).where(Save.users==current_user, Save.current==True))
     ruleset = current_save.ruleset
-    current_save_id = current_save.id
     variant = request.form.get("variant_select")
     if variant == 'default':
         variant = ''
     elif variant is None:
         flash("Please select a variant sprite to switch to")
-        return redirect(url_for('main.view_save')) 
-    variant_to_change = Pokemon.query.join(Player).join(Save).filter(
-        Save.id == current_save_id).filter(
-        Player.number == player_num).filter(
-            Pokemon.link_id == link_id).first()
-    print(variant_to_change.pokedex_number, variant)
-    variant_to_change.sprite = variant_to_change.pokedex_number + variant
-    db.session.commit()
+        return redirect(url_for('main.view_save'))
+    variant_to_change = db.session.scalar(db.select(Pokemon).join(Pokemon.player).where(Player.number==player_num, Player.saves==current_save, Pokemon.link_id==link_id))
+    new_variant = db.session.scalar(db.select(Sprite).join(Sprite.pokedex_info).where(Pokedex.number==variant_to_change.info.number, Sprite.variant_let==variant))
+    if new_variant:
+        variant_to_change.sprite = new_variant
+        db.session.commit()
+    else:
+        flash("Please select a valid variant letter")
     return redirect(url_for('main.view_save'))
 
 
@@ -147,9 +145,8 @@ def change_variant(player_num, link_id):
 @pokemon.route('/fuse', methods=['POST'])
 @login_required
 def fuse_pokemon():
-    current_save = db.session.scalar(db.select(Save).where(Save.users==current_user))
+    current_save = db.session.scalar(db.select(Save).where(Save.users==current_user, Save.current==True))
     ruleset = current_save.ruleset
-    current_save_id = current_save.id
     head_link_ids, body_link_ids = [], []
     
     for key, value in request.form.items():
@@ -170,21 +167,22 @@ def fuse_pokemon():
         flash("Fusion Failed: A Pokemon was used multiple times in one fusion")
         return redirect(url_for('main.view_save'))
     
-    new_link_id = get_new_link_id(current_save_id)
+    new_link_id = get_new_link_id(current_save.id)
     if ruleset == ROUTE_RULESET:
-        head_routes = [r.route for r in Pokemon.query.join(Save.players).join(Player.pokemon).filter(Save.id == current_save.id, Pokemon.link_id.in_(head_link_ids))]
-        body_routes = [r.route for r in Pokemon.query.join(Save.players).join(Player.pokemon).filter(Save.id == current_save.id, Pokemon.link_id.in_(body_link_ids))]
+        head_routes = [r.route for r in db.session.scalars(db.select(Pokemon).join(Pokemon.player).where(Player.saves==current_save, Pokemon.link_id.in_(head_link_ids)))]
+        body_routes = [r.route for r in db.session.scalars(db.select(Pokemon).join(Pokemon.player).where(Player.saves==current_save, Pokemon.link_id.in_(body_link_ids)))]
         if all(i == head_routes[0] for i in head_routes) and all(
                 i == head_routes[0] for i in body_routes):
-            create_fusion_pokemon(new_link_id, head_link_ids, body_link_ids, ruleset, current_save_id)
+            create_fusion_pokemon(new_link_id, head_link_ids, body_link_ids, current_save)
         else:
             flash("not valid fusions")
     elif ruleset == SPECIAL_RULESET:
         players_routes = []
-        for head, body in zip(head_link_ids, body_link_ids):
-            players_routes.append(sorted([r.route for r in Pokemon.query.join(Save.players).join(Player.pokemon).filter(Save.id == current_save_id, or_(Pokemon.link_id == head, Pokemon.link_id == body))]))
+        players_routes.append(sorted([r.route for r in db.session.scalars(db.select(Pokemon)
+                                                                          .join(Pokemon.player)
+                                                                          .where(Player.saves==current_save, Pokemon.link_id.in_(head_link_ids + body_link_ids)))]))
         if all(i == players_routes[0] for i in players_routes):
-            create_fusion_pokemon(new_link_id, head_link_ids, body_link_ids, ruleset, current_save_id)
+            create_fusion_pokemon(new_link_id, head_link_ids, body_link_ids, current_save)
         else:
             flash("not valid fusions")
     elif ruleset in AUTO_RULESET:
@@ -192,11 +190,11 @@ def fuse_pokemon():
         for head, body in zip(head_link_ids, body_link_ids):
             players_link_ids.append(sorted([head, body]))
         if all(i == players_link_ids[0] for i in players_link_ids):
-            create_fusion_pokemon(new_link_id, head_link_ids, body_link_ids, ruleset, current_save_id)
+            create_fusion_pokemon(new_link_id, head_link_ids, body_link_ids, current_save)
         else:
             flash("not valid fusions")
     elif ruleset == MANUAL_RULESET:
-        create_fusion_pokemon(new_link_id, head_link_ids, body_link_ids, ruleset, current_save_id)
+        create_fusion_pokemon(new_link_id, head_link_ids, body_link_ids, current_save)
     else:
         flash("Ruleset does not exist")
     return redirect(url_for('main.view_save'))
@@ -207,7 +205,7 @@ def fuse_pokemon():
 @login_required
 def delete_pokemon(link_id):
     id = current_user.id
-    current_save = db.session.scalar(db.select(Save).where(Save.users==current_user))
+    current_save = db.session.scalar(db.select(Save).where(Save.users==current_user, Save.current==True))
     ruleset = current_save.ruleset
     current_save_id = current_save.id
     pokemon_to_delete = Pokemon.query.join(Save.players).join(Player.pokemon).filter(Save.id==current_save_id).filter(Pokemon.link_id==link_id)
@@ -226,7 +224,7 @@ def delete_pokemon(link_id):
 @pokemon.route('/evolve/<int:player_num>/<int:link_id>', methods=['POST'])
 @login_required
 def evolve_pokemon(player_num, link_id):
-    current_save = db.session.scalar(db.select(Save).where(Save.users==current_user))
+    current_save = db.session.scalar(db.select(Save).where(Save.users==current_user, Save.current==True))
     ruleset = current_save.ruleset
     current_save_id = current_save.id
     # Check if evolution is a valid evolution
@@ -254,7 +252,7 @@ def switch_party(link_id):
     if not link_id.isdigit():
         flash("Not a valid Pokemon")
         return redirect(url_for('main.view_save'))
-    current_save = db.session.scalar(db.select(Save).where(Save.users==current_user))
+    current_save = db.session.scalar(db.select(Save).where(Save.users==current_user, Save.current==True))
     ruleset = current_save.ruleset
     current_save_id = current_save.id
     for key, value in request.form.items():
@@ -280,7 +278,7 @@ def switch_box(link_id):
     if not link_id.isdigit():
         flash("Not a valid Pokemon")
         return redirect(url_for('main.view_save'))
-    current_save = db.session.scalar(db.select(Save).where(Save.users==current_user))
+    current_save = db.session.scalar(db.select(Save).where(Save.users==current_user, Save.current==True))
     ruleset = current_save.ruleset
     current_save_id = current_save.id
     pokemon_to_box = db.session.scalars(db.select(Pokemon).join(Pokemon.player).where(Player.saves==current_save, Pokemon.link_id==link_id))
@@ -308,7 +306,7 @@ def switch_dead(link_id):
     if not link_id.isdigit():
         flash("Not a valid Pokemon")
         return redirect(url_for('main.view_save'))
-    current_save = db.session.scalar(db.select(Save).where(Save.users==current_user))
+    current_save = db.session.scalar(db.select(Save).where(Save.users==current_user, Save.current==True))
     ruleset = current_save.ruleset
     current_save_id = current_save.id
     pokemon_to_grave = db.session.scalars(db.select(Pokemon).join(Pokemon.player).where(Pokemon.link_id==link_id, Player.saves==current_save))
@@ -324,7 +322,7 @@ def switch_revive(link_id):
     if not link_id.isdigit():
         flash("Not a valid Pokemon")
         return redirect(url_for('main.view_save'))
-    current_save = db.session.scalar(db.select(Save).where(Save.users==current_user))
+    current_save = db.session.scalar(db.select(Save).where(Save.users==current_user, Save.current==True))
     pokemon_to_box = db.session.scalars(db.select(Pokemon).join(Pokemon.player).where(Pokemon.link_id==link_id, Player.saves==current_save))
     for pokemon in pokemon_to_box:
         pokemon.position = 'box'

@@ -2,42 +2,40 @@ from ...extensions import db
 from flask import flash, request
 from ...models import Player, Pokedex, Pokemon, Save
 
-def add_pokemon_per_ruleset_group(ruleset_group, player_number, species, link_id, route, current_save_id):
+def add_pokemon_per_ruleset_group(ruleset_group, player, species, link_id, route, current_save):
     if ruleset_group == 'manual':
         linked = False
     elif ruleset_group == 'auto':
         linked = True
     elif ruleset_group == 'route':
-        linked, link_id = False, get_new_link_id(current_save_id)
+        linked, link_id = False, get_new_link_id(current_save.id)
     else:
         return 'ERROR'
     # pokedex_number = PokedexBase.query.filter(PokedexBase.species==species).first().number
-    player_id = Player.query.join(Save).filter(Save.id==current_save_id, Player.number==player_number).first().id
-    pokemon = Pokemon(player_id=player_id, pokedex_number=pokedex_number, sprite=pokedex_number, link_id=link_id, linked=linked, route=route, position='box')
-    db.session.add(pokemon)
+    pokedex_entry = db.session.scalar(db.select(Pokedex).where(Pokedex.species==species, Pokedex.head==None))
+    pokemon_to_add = Pokemon(link_id=link_id,
+                             linked=linked,
+                             route=route,
+                             position='box',
+                             player=player,
+                             info=pokedex_entry)
+    db.session.add(pokemon_to_add)
 
 
-def create_fusion_pokemon(new_link_id, head_link_ids, body_link_ids, ruleset, current_save_id):
-    for head, body, player in zip(head_link_ids, body_link_ids, Player.query.filter(
-            Player.save_id==current_save_id)):
-        if ruleset == 1:
-            new_link_id == get_new_link_id(current_save_id)
-        head_pokemon, body_pokemon = Pokemon.query.filter_by(
-            link_id=head, player_id=player.id).first(), Pokemon.query.filter_by(
-            link_id=body, player_id=player.id).first()
-        fused_pokemon_id = f"{ 
-            head_pokemon.info.number}.{
-            body_pokemon.info.number}"
-        fused_pokemon = Pokedex.query.filter_by(
-            number=fused_pokemon_id).first()
+def create_fusion_pokemon(new_link_id, head_link_ids, body_link_ids, current_save):
+    for head_link_id, body_link_id, player in zip(head_link_ids, body_link_ids, current_save.players):
+        if current_save.ruleset == 1:
+            new_link_id == get_new_link_id(current_save.id)
+        head_pokemon = db.session.scalar(db.select(Pokemon).where(Pokemon.player==player, Pokemon.link_id==head_link_id))
+        body_pokemon = db.session.scalar(db.select(Pokemon).where(Pokemon.player==player, Pokemon.link_id==body_link_id))
+        fused_pokemon = db.session.scalar(db.select(Pokedex).where(Pokedex.head==head_pokemon.info, Pokedex.body==body_pokemon.info))
         pokemon_to_add = Pokemon(
-            player_id=player.id,
-            pokedex_number=fused_pokemon.number,
-            sprite=fused_pokemon.number,
-            link_id=new_link_id,
+            link_id = new_link_id,
             linked=True,
-            route=None,
-            position='box')
+            position='box',
+            player=player,
+            info=fused_pokemon,
+            sprite=fused_pokemon.sprites[0])
         db.session.add(pokemon_to_add)
         db.session.delete(head_pokemon)
         db.session.delete(body_pokemon)

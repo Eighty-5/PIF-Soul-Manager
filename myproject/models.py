@@ -74,7 +74,7 @@ class Pokemon(db.Model):
 
     player: Mapped["Player"] = relationship(back_populates="pokemons")
     info: Mapped["Pokedex"] = relationship()
-    sprite: Mapped["Sprite"] = relationship()
+    sprite: Mapped[Optional["Sprite"]] = relationship()
 
     def set_new_sprite(self):
         pass
@@ -114,9 +114,15 @@ class Pokedex(db.Model):
 
     def split_names(self) -> str:
         if self.head:
-            return self.species
-        else:
             return f"{self.head.species} + {self.body.species}"
+        else:
+            return self.species
+        
+    def typing(self) -> str:
+        if self.type_secondary:
+            return f"{self.type_primary} / {self.type_secondary}"
+        else:
+            return f"{self.type_primary}"
 
     def __repr__(self) -> str:
         if self.head:
@@ -192,9 +198,9 @@ class Artist(db.Model):
     __tablename__ = "artist"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(100, collation="utf8_bin"), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(100, collation='utf8mb4_0900_as_cs'), unique=True, index=True)
 
-    sprites: Mapped[list["Sprite"]] = relationship(back_populates="artists", cascade="all, delete-orphan")
+    sprites: Mapped[Optional[list["Sprite"]]] = relationship(back_populates="artists", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
         return f"Artist(id={self.id!r}, name={self.name!r})"

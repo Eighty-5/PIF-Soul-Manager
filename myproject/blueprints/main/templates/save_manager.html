@@ -58,8 +58,8 @@
               {% for part in ["Head", "Body"] %}
                 <select class="form-select" aria-label="Default select example" name="{{ part }}_{{ player.number }}" id="fuse_{{ part }}" onchange="fuse_options()">
                   <option selected disabled>Fusion: {{ part }}</option>
-                  {% for pokemon in player.pokemon %}
-                    {% if not "." in pokemon.info.number %}
+                  {% for pokemon in player.pokemons %}
+                    {% if not pokemon.head %}
                       <option value="{{ pokemon.link_id }}">{{ pokemon.info.species }}</option>
                     {% endif %}
                   {% endfor %}
@@ -112,7 +112,7 @@
                           <option selected disabled>Evolve to...</option>
                           {% for evo in mon.info.evolutions() %}
                             {% if evo.number != mon.info.number %}
-                              <option value="{{ evo.number }}">{{ evo.species }}</option>
+                              <option value="{{ evo.number }}">{{ evo.split_names() }}</option>
                             {% endif %}
                           {% endfor %}
                         </select>
@@ -200,14 +200,13 @@
                   </div>
                   <!-- Variant Form and Sprite Info -->
                   <div class="col-md-6">
-                    <div><img class="mx-auto d-block" src="{{ url_for('main.static', filename='images/sprites/' ~ mon.info.base_id_1 ~ '/' ~ mon.sprite ~ '.nosprite') }}" onerror="this.onerror=null; this.src='/main/static/images/sprites/default/default.png'" width="150" height="150"></div>
-                    <!-- <div>
-                      artist: {{ mon.info.artists }}
-                      <br>
-                      {% if mon.sprite.variant_let != '' %}
-                        sprite variant: {{ mon.sprite.variant_let.upper() }}
-                      {% endif %}
-                    </div> -->
+                    {% if not mon.sprite %}
+                      <div><img class="mx-auto d-block" src="{{ url_for('main.static', filename='images/sprites/' ~ mon.info.head.number ~ '/' ~ mon.info.number ~ '.png') }}" onerror="this.onerror=null; this.src='/main/static/images/sprites/default/default.png'" width="150" height="150"></div>
+                      artists: japeal
+                    {% else %}
+                      <div><img class="mx-auto d-block" src="{{ url_for('main.static', filename='images/sprites/' ~ mon.sprite.sprite_group() ~ '/' ~ mon.sprite.sprite_code() ~ '.png') }}" onerror="this.onerror=null; this.src='/main/static/images/sprites/default/default.png'" width="150" height="150"></div>
+                      artist: {{ mon.sprite.artists.name }}
+                    {% endif %}
                   </div>
                 </div>
                 <a style="text-align: center;" target="_blank" rel="noopener noreferrer" href="https://if.daena.me/{{ mon.pokedex_number }}/">More info on FusionDex</a>
@@ -258,7 +257,7 @@
                             <option selected disabled>Evolve to...</option>
                             {% for evo in mon.info.evolutions() %}
                               {% if evo.number != mon.info.number %}
-                                <option value="{{ evo.number }}">{{ evo.species }}</option>
+                                <option value="{{ evo.number }}">{{ evo.split_names() }}</option>
                               {% endif %}
                             {% endfor %}
                           </select>
@@ -349,14 +348,13 @@
                     <!-- Right Side -->
                     <!-- Sprite -->
                     <div class="col-md-6">
-                      <div><img class="mx-auto d-block" src="{{ url_for('main.static', filename='images/sprites/' ~ mon.info.head.number ~ '/' ~ mon.sprite ~ '.nosprite') }}" onerror="this.onerror=null; this.src='/main/static/images/sprites/default/default.png'" width="150" height="150"></div>
-                      <!-- <div>
-                        artist: {{ mon.sprite.artists }}
-                        <br>
-                        {% if mon.sprite.variant_let != '' %}
-                          sprite variant: {{ mon.sprite.variant_let.upper() }}
-                        {% endif %}
-                      </div> -->
+                      {% if not mon.sprite %}
+                        <div><img class="mx-auto d-block" src="{{ url_for('main.static', filename='images/sprites/' ~ mon.info.head.number ~ '/' ~ mon.info.number ~ '.png') }}" onerror="this.onerror=null; this.src='/main/static/images/sprites/default/default.png'" width="150" height="150"></div>
+                        artists: japeal
+                      {% else %}
+                        <div><img class="mx-auto d-block" src="{{ url_for('main.static', filename='images/sprites/' ~ mon.sprite.sprite_group() ~ '/' ~ mon.sprite.sprite_code() ~ '.png') }}" onerror="this.onerror=null; this.src='/main/static/images/sprites/default/default.png'" width="150" height="150"></div>
+                        artist: {{ mon.sprite.artists.name }}
+                      {% endif %}
                     </div>
                     <a style="text-align: center;" target ="_blank" rel="noopener noreferrer" href="https://if.daena.me/{{ mon.pokedex_number }}/">More info on FusionDex</a>
                   </div>

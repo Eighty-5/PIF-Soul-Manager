@@ -28,7 +28,7 @@
                     </li>
                 {% endif %}
                 <!-- If a current save is listed in DB (usually not only after login) -->
-                {% if current_user.current_save %}
+                {% if current_user %}
                     <li class="nav-item">
                         <a class="nav-link active" aria-current="page" href="/save/view">View Current Save</a>
                     </li>

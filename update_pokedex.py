@@ -312,6 +312,8 @@ def main() -> None:
         artist_query = db.session.execute(db.select(Artist)).scalars()
         artists = {artist.name: None for artist in artist_query}
         artists_to_add = []
+        if not 'japeal' in artists:
+            artists_to_add.append(Artist(name='japeal'))
         with open(SPRITE_CREDITS_PATH, newline='', errors='ignore') as sprites_file:
             sprite_reader = csv.DictReader(sprites_file)
             for row in sprite_reader:
@@ -354,6 +356,13 @@ def main() -> None:
                 sprites_file_dna.write(f"{key}:\n")
                 for sprite in sprites:
                     sprites_file_dna.write(f"{sprite}\n")
+        
+        japeal = db.session.scalar(db.select(Artist).where(Artist.name=='japeal'))
+        for entry in pokedex_full:
+            if not entry.sprites:
+                print(entry.number, entry.species)
+                # entry.sprites = Sprite(variant_let='', artists=japeal)
+        # db.session.commit()
         
         full_time_t1 = time.perf_counter()
 

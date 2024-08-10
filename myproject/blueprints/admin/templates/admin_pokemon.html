@@ -8,6 +8,7 @@
 <table class="table table-hover table-bordered table-striped">
     <tr>
         <td class="title">ID</td>
+        <td class="title">Save ID</td>        
         <td class="title">Player ID</td>
         <td class="title">Pokedex Number</td>
         <td class="title">Species</td>
@@ -27,6 +28,7 @@
         <tr>
             <form action="{{ url_for('admin.admin_delete_pokemon', mon_id=mon.id) }}" method="POST">
                 <td>{{ mon.id }}</td>
+                <td>{{ mon.player.saves.id }}</td>
                 <td>{{ mon.player_id }}</td>
                 <td>{{ mon.info.number }}</td>
                 <td>{{ mon.info.species }}</td>

@@ -139,108 +139,70 @@ def preview_fusions(player_num, link_id):
     selected_player = db.session.scalar(db.select(Player).where(Player.saves==current_save, Player.number==player_num))
     selected_pokemon = db.session.scalar(db.select(Pokemon).where(Pokemon.link_id==link_id, Pokemon.player==selected_player))
     if ruleset != ROUTE_RULESET:
-        possible_partners = db.session.scalars(db.select(Pokemon).join(Pokemon.player, Pokemon.info).where(Pokemon.link_id!=link_id, Pokemon.player==selected_player, Pokedex.head==None, Pokemon.position!='dead'))
+        possible_partners = db.session.scalars(db.select(Pokemon).join(Pokemon.player).join(Pokemon.info).where(Pokemon.link_id!=link_id, Pokemon.player==selected_player, Pokedex.head==None, Pokemon.position!='dead'))
     elif ruleset == ROUTE_RULESET:
-        possible_partners = db.session.scalars(db.select(Pokemon).join(Pokemon.player, Pokemon.info).where(Pokemon.link_id!=link_id, Pokemon.player==selected_player, Pokedex.head==None, Pokemon.position!='dead', Pokemon.route==selected_pokemon.route))
-        # possible_partners = Pokemon.query.join(Save.players).join(Player.pokemon).join(Pokedex).filter(Save.id == current_save_id, Player.number == player_num, Pokemon.link_id != link_id, Pokemon.position != 'dead', Pokemon.route == selected_pokemon.route).filter(Pokedex.base_id_2 == None)
+        possible_partners = db.session.scalars(db.select(Pokemon).join(Pokemon.player).join(Pokemon.info).where(Pokemon.link_id!=link_id, Pokemon.player==selected_player, Pokedex.head==None, Pokemon.position!='dead', Pokemon.route==selected_pokemon.route))
+    
     if ruleset == MANUAL_RULESET:
         flash(f"Since save is using Full Freedom Ruleset possible fusions shown only for {selected_player.name}")
         players = [selected_player]
     else:
         players = current_save.players
     column_widths = get_column_widths(len(players))
+    preview_fusions_dict = {}
     master_dict = {}
+    count_1 = 1
     for partner in possible_partners:
         partner_species = partner.info.species
-        master_dict[partner_species] = {
-                'info':{partner}, 
-                'fusions': {}}
+        preview_fusions_dict[count_1] = {}
         for player in players:
+            preview_fusions_dict[count_1][player.number] = {}
             if ruleset == SPECIAL_RULESET:
-                if partner.route == selected_pokemon.route:
-                    pokemon_same_route = db.session.scalars(db.select(Pokemon).where(Pokemon.player==player, Pokemon.route==partner.route))
-                    pokemons_1, pokemons_2 = [pokemon_same_route[0]], [pokemon_same_route[1]]
-                elif player.id == selected_pokemon.player_id:
+                if selected_pokemon.player == player:
                     pokemons_1 = [selected_pokemon]
                     pokemons_2 = [partner]
+                elif partner.route == selected_pokemon.route:
+                    pokemon_same_route = db.session.scalars(db.select(Pokemon).where(Pokemon.player==player, Pokemon.route==partner.route))
+                    pokemons_1, pokemons_2 = pokemon_same_route[0], pokemon_same_route[1]
                 else:
-                    pokemons_1 = db.session.scalar(db.select(Pokemon).where(Pokemon.player==player, Pokemon.route==selected_pokemon.route))
-                    pokemons_2 = db.session.scalar(db.select(Pokemon).where(Pokemon.player==player, Pokemon.route==partner.route))
+                    pokemons_1 = db.session.scalars(db.select(Pokemon).where(Pokemon.player==player, Pokemon.route==selected_pokemon.route))
+                    pokemons_2 = db.session.scalars(db.select(Pokemon).where(Pokemon.player==player, Pokemon.route==partner.route))
             elif ruleset in AUTO_RULESET:
-                pokemons_1 = db.session.scalar(db.select(Pokemon).where(Pokemon.player==player, Pokemon.link_id==selected_pokemon.link_id))
-                pokemons_2 = db.session.scalar(db.select(Pokemon).where(Pokemon.player==player, Pokemon.link_id==partner.link_id))
+                pokemons_1 = db.session.scalars(db.select(Pokemon).where(Pokemon.player==player, Pokemon.link_id==selected_pokemon.link_id))
+                pokemons_2 = db.session.scalars(db.select(Pokemon).where(Pokemon.player==player, Pokemon.link_id==partner.link_id))
             elif ruleset == ROUTE_RULESET:
-                pokemons = Pokemon.query.filter(Pokemon.player_id == player.id, Pokemon.route == selected_pokemon.route)
-                pokemons_1, pokemons_2 = [pokemons[0]], [pokemons[1]]
+                pokemons = db.session.scalars(db.select(Pokemon).where(Pokemon.player==player, Pokemon.route==selected_pokemon.route))
+                pokemons_1, pokemons_2 = pokemons[0], pokemons[1]
             else:
-                pokemons_1, pokemons_2 = [selected_pokemon], [partner]  
-            master_dict[partner_species]['fusions'][player.name] = {}
+                pokemons_1, pokemons_2 = [selected_pokemon], [partner]
+
+            
             for pokemon_1 in pokemons_1:
                 for pokemon_2 in pokemons_2:
-                    pokedex_number_norm = pokemon_1.pokedex_number + '.' + pokemon_2.pokedex_number
-                    pokedex_number_swap = pokemon_2.pokedex_number + '.' + pokemon_1.pokedex_number
-                    combo = pokemon_1.info.species + ' + ' + pokemon_2.info.species
-                    norm = Pokedex.query.join(Artist).filter(Pokedex.number == pokedex_number_norm).first()
-                    swap = Pokedex.query.join(Artist).filter(Pokedex.number == pokedex_number_swap).first()
-                    curr_fusion = {
-                        'norm':{
-                            'number':norm.number, 
-                            'species':norm.species, 
-                            'typing':norm.type_primary if not norm.type_secondary else norm.type_primary + ' / ' + norm.type_secondary, 
-                            'base_id_1':norm.base_id_1,
-                            'artist':norm.artists[0].artist,
-                            'hp':norm.hp,
-                            'attack':norm.attack,
-                            'defense':norm.defense,
-                            'sp_attack':norm.sp_attack,
-                            'sp_defense':norm.sp_defense,
-                            'speed':norm.speed,
-                            'total':norm.total},
-                        'swap':{
-                            'number':swap.number, 
-                            'species':swap.species, 
-                            'typing':swap.type_primary if not swap.type_secondary else swap.type_primary + ' / ' + swap.type_secondary, 
-                            'base_id_1':swap.base_id_1,
-                            'artist':swap.artists[0].artist,
-                            'hp':swap.hp,
-                            'attack':swap.attack,
-                            'defense':swap.defense,
-                            'sp_attack':swap.sp_attack,
-                            'sp_defense':swap.sp_defense,
-                            'speed':swap.speed,
-                            'total':swap.total}}
-                    final_norm = Pokedex.query.join(Artist).filter(Pokedex.family == norm.family).order_by(Pokedex.family_order.desc()).first()
-                    final_swap = Pokedex.query.join(Artist).filter(Pokedex.family == swap.family).order_by(Pokedex.family_order.desc()).first()
-                    final_fusion = {
-                        'norm':{
-                            'number':final_norm.number, 
-                            'species':final_norm.species, 
-                            'typing':final_norm.type_primary if not final_norm.type_secondary else final_norm.type_primary + ' / ' + final_norm.type_secondary, 
-                            'base_id_1':final_norm.base_id_1,
-                            'artist':final_norm.artists[0].artist,
-                            'hp':final_norm.hp,
-                            'attack':final_norm.attack,
-                            'defense':final_norm.defense,
-                            'sp_attack':final_norm.sp_attack,
-                            'sp_defense':final_norm.sp_defense,
-                            'speed':final_norm.speed,
-                            'total':final_norm.total}, 
-                        'swap':{
-                            'number':final_swap.number, 
-                            'species':final_swap.species, 
-                            'typing':final_swap.type_primary if not final_swap.type_secondary else final_swap.type_primary + ' / ' + final_swap.type_secondary, 
-                            'base_id_1':final_swap.base_id_1,
-                            'artist':final_swap.artists[0].artist,
-                            'hp':final_swap.hp,
-                            'attack':final_swap.attack,
-                            'defense':final_swap.defense,
-                            'sp_attack':final_swap.sp_attack,
-                            'sp_defense':final_swap.sp_defense,
-                            'speed':final_swap.speed,
-                            'total':final_swap.total}}
-                    master_dict[partner_species]['fusions'][player.name][combo] = {'current':curr_fusion, 'final':final_fusion}           
+                    fusion_names = f"{pokemon_1.info.species} + {pokemon_2.info.species}"
+                    preview_fusions_dict[count_1][player.number][fusion_names] = {'current':{}, 'final':{}}
+                    preview_fusions_dict[count_1][player.number][fusion_names]['current']['norm'] = db.session.scalar(db.select(Pokedex).where(Pokedex.head==pokemon_1.info, Pokedex.body==pokemon_2.info))
+                    preview_fusions_dict[count_1][player.number][fusion_names]['current']['swap'] = db.session.scalar(db.select(Pokedex).where(Pokedex.head==pokemon_2.info, Pokedex.body==pokemon_1.info))
+                    preview_fusions_dict[count_1][player.number][fusion_names]['final']['norm'] = db.session.scalar(db.select(Pokedex).where(Pokedex.family==f"{pokemon_1.info.family}.{pokemon_2.info.family}").order_by(Pokedex.family_order.desc()))
+                    preview_fusions_dict[count_1][player.number][fusion_names]['final']['swap'] = db.session.scalar(db.select(Pokedex).where(Pokedex.family==f"{pokemon_2.info.family}.{pokemon_1.info.family}").order_by(Pokedex.family_order.desc()))
+        count_1 = count_1 + 1
+    for row, player_numbers in preview_fusions_dict.items():
+        print(f"Row: {row}")
+        for player, fusion_names in player_numbers.items():
+            print(f"Player:{player}\nFusion Names:{fusion_names}")
+            for fusion_name, fusions in fusion_names.items():
+                print(fusion_name)
+                print("CURRENT")
+                for flip, fusion in fusions['current'].items():
+                    print(f"FLIP: {flip}")
+                    print(f"FUSION: {fusion}")
+                print("FINAL")
+                for flip, fusion in fusions['final'].items():
+                    print(f"FLIP: {flip}")
+                    print(f"FUSION: {fusion}")
+    
     return render_template('preview_fusions.html',
                            players=players,
                            selected_pokemon=selected_pokemon, 
-                           master_dict=master_dict,
+                           master_dict=preview_fusions_dict,
                            column_widths=column_widths)
