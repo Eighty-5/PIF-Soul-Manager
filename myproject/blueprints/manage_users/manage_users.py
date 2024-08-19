@@ -52,7 +52,7 @@ def register():
     form = RegisterForm()
     if request.method == 'POST':
         if form.validate_on_submit():
-            user = User.query.filter_by(username=form.username.data).first()
+            user = db.session.scalar(db.select(User).where(User.username==form.username.data))
             # If no user with entered username exits:
             if user is None:
                 user = User(username=form.username.data, hash=generate_password_hash(form.password.data, method='pbkdf2', salt_length=16))

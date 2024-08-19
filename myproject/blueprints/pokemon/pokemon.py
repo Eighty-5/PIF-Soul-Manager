@@ -46,7 +46,7 @@ def add_pokemon():
             species = pokemon_to_add_dict[player_num]
             link_id = get_new_link_id(current_save.id)
             add_pokemon_per_ruleset_group(
-                'manual', player_num, species, link_id, None, current_save.id)
+                'manual', player, species, link_id, None, current_save)
             added_pokemon_lst.append(species)
         flash(f"{', '.join(added_pokemon_lst)} were added to the save!")
         db.session.commit()
@@ -56,7 +56,7 @@ def add_pokemon():
         for player_num in pokemon_to_add_dict:
             species = pokemon_to_add_dict[player_num]
             add_pokemon_per_ruleset_group(
-                'auto', player_num, species, link_id, route, current_save.id)
+                'auto', player_num, species, link_id, route, current_save)
             added_pokemon_lst.append(species)
         flash(f"{', '.join(added_pokemon_lst)} were added to the save!")
         db.session.commit()

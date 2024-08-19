@@ -68,7 +68,7 @@
                             <br>
                             <center><img style="text-align:center" src="{{ url_for('main.static', filename='images/sprites/' ~ fusion.head.number ~ '/' ~ fusion.number ~ '.png') }}" onerror="this.onerror=null; this.src='/main/static/images/sprites/default/default.png'" width="150" height="150"></center>
                             <br>
-                            artist: {{fusion.sprites[0]}}
+                            artist: {{fusion.sprites[0].artists.name}}
                             <br><br>
                             <a target ="_blank" rel="noopener noreferrer" href="https://if.daena.me/{{ fusion.number }}/">More info on FusionDex</a>
                           </div>
@@ -101,7 +101,7 @@
                             <br>
                             <center><img src="{{ url_for('main.static', filename='images/sprites/' ~ fusion.head.number ~ '/' ~ fusion.number ~ '.png') }}" onerror="this.onerror=null; this.src='/main/static/images/sprites/default/default.png'" width="150" height="150"></center>
                             <br>
-                            artist: {{fusion.sprites[0]}}
+                            artist: {{fusion.sprites[0].artists.name}}
                             <br><br>
                             <a target ="_blank" rel="noopener noreferrer" href="https://if.daena.me/{{ fusion.number }}/">More info on FusionDex</a>
                           </div>

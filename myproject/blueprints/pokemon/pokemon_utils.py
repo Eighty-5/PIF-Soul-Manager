@@ -2,7 +2,8 @@ from ...extensions import db
 from flask import flash, request
 from ...models import Player, Pokedex, Pokemon, Save
 
-def add_pokemon_per_ruleset_group(ruleset_group, player, species, link_id, route, current_save):
+def add_pokemon_per_ruleset_group(ruleset_group, player_num, species, link_id, route, current_save):
+    player = db.session.scalar(db.select(Player).where(Player.saves==current_save, Player.number==player_num))
     if ruleset_group == 'manual':
         linked = False
     elif ruleset_group == 'auto':
@@ -11,7 +12,6 @@ def add_pokemon_per_ruleset_group(ruleset_group, player, species, link_id, route
         linked, link_id = False, get_new_link_id(current_save.id)
     else:
         return 'ERROR'
-    # pokedex_number = PokedexBase.query.filter(PokedexBase.species==species).first().number
     pokedex_entry = db.session.scalar(db.select(Pokedex).where(Pokedex.species==species, Pokedex.head==None))
     pokemon_to_add = Pokemon(link_id=link_id,
                              linked=linked,

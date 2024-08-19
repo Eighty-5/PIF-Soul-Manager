@@ -20,6 +20,13 @@ test/
 locations.txt
 rulesets.txt
 bugs_list.txt
+pokedex_stuff/logs/artists_updates/*
+pokedex_stuff/logs/pokedex_updates/*
+pokedex_stuff/logs/sprites_updates/*
+pokedex_stuff/sprite_credits/*
+Deleted Code.txt
+!*.gitkeep
+
 
 privacy_policy.txt
 about.txt
