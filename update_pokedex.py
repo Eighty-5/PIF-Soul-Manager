@@ -249,7 +249,6 @@ def main() -> None:
                 if not new_entry.__eq__(old_entry, 'name_1', 'name_2'):
                     new_naming_arr.append(old_species)
 
-
         if len(new_stats_arr) > 0:
             print(f"Updating stats for Base + Fusions for the following Pokedex numbers: {new_stats_arr}")
             update_stats(new_stats_arr, new_pokedex)
@@ -267,8 +266,6 @@ def main() -> None:
             update_naming(new_naming_arr, new_pokedex)
             print(f"species updated for Base + Fusions")
         print("Existing Pokedex updated!")
-
-        
 
         print("Checking for any new Pokemon. . .")
         pokedex_query = db.session.execute(db.select(Pokedex).where(Pokedex.head==None)).scalars().all()
@@ -564,10 +561,6 @@ def create_fusion(head_pokemon, body_pokemon):
                      head=head_pokemon, body=body_pokemon, family=f"{head_pokemon.family}.{body_pokemon.family}",
                      family_order=f"{head_pokemon.family_order}.{body_pokemon.family_order}",
                      stats=fused_stats)
-    
-    # stats = PokedexStats(hp=fused_stats["hp"], attack=fused_stats["attack"], defense=fused_stats["defense"],
-    #                      sp_attack=fused_stats["sp_attack"], sp_defense=fused_stats["sp_defense"],
-    #                      speed=fused_stats["speed"], info=fusion)
     return fusion, fused_stats
 
 

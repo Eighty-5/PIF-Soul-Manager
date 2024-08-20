@@ -19,6 +19,7 @@ def add_pokemon_per_ruleset_group(ruleset_group, player_num, species, link_id, r
                              position='box',
                              player=player,
                              info=pokedex_entry)
+    pokemon_to_add.set_default_sprite()
     db.session.add(pokemon_to_add)
 
 
@@ -44,13 +45,11 @@ def create_fusion_pokemon(new_link_id, head_link_ids, body_link_ids, current_sav
 
 
 def dex_check(dex_num):
-    if not Pokedex.query.filter(Pokedex.number==dex_num).first():
-        return False
-    return True
+    return db.session.scalar(db.select(Pokedex).where(Pokedex.number==dex_num))
 
 
-def evolution_check(evolution_id, base_id):
-    if Pokedex.query.filter(Pokedex.number==evolution_id).first().family == Pokedex.query.filter(Pokedex.number==base_id).first().family:
+def evolution_check(evolution_number, pokemon_to_evolve):
+    if db.session.scalar(db.select(Pokedex).where(Pokedex.number==evolution_number)) in pokemon_to_evolve.evolutions():
         return True
     else:
         return False
@@ -64,8 +63,8 @@ def fusion_check(heads, bodys):
     return True
 
 
-def get_new_link_id(current_save_id):
-    last_pokemon = Pokemon.query.join(Save.players).join(Player.pokemons).filter(Save.id==current_save_id).order_by(Pokemon.link_id.desc()).first()
+def get_new_link_id(current_save):
+    last_pokemon = db.session.scalar(db.select(Pokemon).join(Pokemon.player).where(Player.saves==current_save).order_by(Pokemon.link_id.desc()))
     if last_pokemon:
         return last_pokemon.link_id + 1
     else:
@@ -86,6 +85,12 @@ def route_validation(num_of_encounters, current_save):
         flash("No route selected")
         return False
     
+
+def get_pokemon(current_save, player_num, link_id):
+    return db.session.scalar(db.select(Pokemon).join(Pokemon.player).where(Player.number==player_num, Player.saves==current_save, Pokemon.link_id==link_id))
+
+def get_current_save(current_user):
+    return db.session.scalar(db.select(Save).where(Save.users==current_user, Save.current==True))    
 
 
 

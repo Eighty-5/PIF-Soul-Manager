@@ -1,11 +1,14 @@
 {% extends 'layout.html' %}
 
 {% block title %}
-    Save {{ save_num }}
+  Save {{ save_num }}
+{% endblock %}
+
+{% block jscript %}
 {% endblock %}
 
 {% block header %}
-    Save {{ save.number }} Manager - Ruleset {{ save.ruleset }}
+  Save {{ save.number }} Manager - Ruleset {{ save.ruleset }}
 {% endblock %}
 
 {% block main %}
@@ -59,7 +62,7 @@
                 <select class="form-select" aria-label="Default select example" name="{{ part }}_{{ player.number }}" id="fuse_{{ part }}" onchange="fuse_options()">
                   <option selected disabled>Fusion: {{ part }}</option>
                   {% for pokemon in player.pokemons %}
-                    {% if not pokemon.head %}
+                    {% if not pokemon.info.head %}
                       <option value="{{ pokemon.link_id }}">{{ pokemon.info.species }}</option>
                     {% endif %}
                   {% endfor %}
@@ -89,7 +92,7 @@
               <div class="row shadow p-1 mb-1 bg-body-tertiary">
                 <!-- Pokemon Name and Typing -->
                 <h4 style="text-align: center; margin-bottom: 0px;">
-                  {{ mon.info.species }}
+                    {{ mon.info.species }}
                     {% if mon.info.body %}
                     - ({{ mon.info.head.species }} + {{ mon.info.body.species }})
                     {% endif %}
@@ -311,11 +314,11 @@
                             <div class="input-group mb-1">
                               <select class="form-select" id="inputGroupSelect03" aria-label="Example select with button addon" name="link_with">
                                 <option selected disabled>Link with ...</option>
-                                {% for other_players in save.players %}
-                                  {% if other_players.id != player.id %}
-                                    {% for other_pokemon in other_players.pokemon %}
-                                      {% if other_pokemon.link_id != mon.link_id %}
-                                        <option value="{{ other_pokemon.link_id }}">{{ other_pokemon.info.species }}</option>
+                                {% for other_player in save.players %}
+                                  {% if other_player != player %}
+                                    {% for other_pokemon in other_player.pokemons %}
+                                      {% if other_pokemon.link_id != mon.link_id and other_pokemon.position != 'dead' %}
+                                        <option value="{{ other_pokemon.link_id }}">{{ other_pokemon.info.species }} ({{ other_pokemon.player.name }})</option>
                                       {% endif %}
                                     {% endfor %}
                                   {% endif %}
@@ -331,7 +334,7 @@
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <button type="button submit" class="btn btn-danger">Faint</button>
                       </form>
-                      {% if not mon.info.base_id_2 %}
+                      {% if not mon.info.body %}
                         <!-- Preview Fusions -->
                         <form action="{{ url_for('main.preview_fusions', player_num=player.number, link_id=mon.link_id) }}" method="post" style="display: inline-block;">
                           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>

@@ -72,8 +72,10 @@ class Pokemon(db.Model):
     info: Mapped["Pokedex"] = relationship()
     sprite: Mapped[Optional["Sprite"]] = relationship()
 
-    def set_new_sprite(self):
-        pass
+    def set_default_sprite(self):
+        new_sprite = db.session.scalar(db.select(Sprite).where(Sprite.info==self.info, Sprite.variant_let==''))
+        self.sprite = new_sprite
+        return db.session.commit()
 
     def __repr__(self) -> str:
         return (f"Pokemon(id={self.id!r}, player={self.player.name!r}, "
