@@ -1,7 +1,6 @@
 db_backups/
 venv/
 __pycache__/
-create_db.py
 .env
 old_scripts.py
 tasks.txt
