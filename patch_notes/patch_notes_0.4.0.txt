@@ -1,0 +1,4 @@
+Patch 0.4.0 - 20-Aug-2024
+
+Optimizations to Pokedex updater and database for faster and more accurate updates to application when an update to the game is made.
+Optimizations on backend server

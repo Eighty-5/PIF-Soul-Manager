@@ -14,11 +14,10 @@ import time
 
 app = create_app()
 PASS_LST = ['450_1']
-# FUSION_EXCEPTIONS = [1, 2, 3, 6, 74, 75, 76, 92, 93, 94, 95, 123, 130, 144, 145, 146, 149, 208]
 
 # Path Variables
-BASE_DEX_CSV_PATH = 'pokedex_stuff/pokedexes/if-base-dex-test-1.csv'
-SPRITES_CREDITS_PATH = 'pokedex_stuff/sprite-credits-test-1.csv'
+BASE_DEX_CSV_PATH = 'pokedex_stuff/pokedexes/if-base-dex.csv'
+SPRITES_CREDITS_PATH = 'pokedex_stuff/sprite_credits/Sprite Credits.csv'
 
 REMOVED_DEX_CSV_PATH = 'pokedex_stuff/pokedexes/removed-dex.csv'
 POKEDEX_UPDATES_PATH = 'pokedex_stuff/logs/pokedex_updates/'
@@ -33,71 +32,6 @@ STATS_LIST = ['hp', 'attack', 'defense', 'sp_attack', 'sp_defense', 'speed']
 # Load ENV variables
 load_dotenv()
 
-def update_family_order(new_family_order_arr, new_pokedex):
-    for species in new_family_order_arr:
-        pokemon_to_update = db.session.execute(db.select(Pokedex).where(Pokedex.species==species, Pokedex.head==None)).scalar()
-        pokemon_to_update.family_order = new_pokedex[species]['info'].family_order
-    db.session.commit()
-    for species in new_family_order_arr:
-        head_fusions_to_update = db.session.execute(db.select(Pokedex).where(Pokedex.species==species, Pokedex.head==None)).scalar().fusions_head
-        body_fusions_to_update = db.session.execute(db.select(Pokedex).where(Pokedex.species==species, Pokedex.head==None)).scalar().fusions_body
-        for fusion in head_fusions_to_update + body_fusions_to_update:
-            fusion.family_order = f"{fusion.head.family_order}.{fusion.body.family_order}"
-    db.session.commit()
-
-
-def update_stats(new_stats_arr, new_pokedex):
-    for species in new_stats_arr:
-        new_stats = new_pokedex[species]['info'].stats
-        pokemon_to_update = db.session.execute(db.select(Pokedex).where(Pokedex.species==species, Pokedex.head==None)).scalar().stats
-        pokemon_to_update.hp, pokemon_to_update.attack, pokemon_to_update.defense, \
-            pokemon_to_update.sp_attack, pokemon_to_update.sp_defense, pokemon_to_update.speed = \
-        new_stats.hp, new_stats.attack, new_stats.defense, new_stats.sp_attack, new_stats.sp_defense, new_stats.speed
-    db.session.commit()
-    for species in new_stats_arr:
-        head_fusions_to_update = db.session.execute(db.select(Pokedex).where(Pokedex.species==species, Pokedex.head==None)).scalar().fusions_head
-        body_fusions_to_update = db.session.execute(db.select(Pokedex).where(Pokedex.species==species, Pokedex.head==None)).scalar().fusions_body
-        for fusion in head_fusions_to_update + body_fusions_to_update:
-            fusion.stats.hp = int(2 * fusion.head.stats.hp/3 + fusion.body.stats.hp/3)
-            fusion.stats.attack = int(2 * fusion.body.stats.attack/3 + fusion.head.stats.attack/3)
-            fusion.stats.defense = int(2 * fusion.body.stats.defense/3 + fusion.head.stats.defense/3)
-            fusion.stats.sp_attack = int(2 * fusion.head.stats.sp_attack/3 + fusion.body.stats.sp_attack/3)
-            fusion.stats.sp_defense = int(2 * fusion.head.stats.sp_defense/3 + fusion.body.stats.sp_defense/3)
-            fusion.stats.speed = int(2 * fusion.body.stats.speed/3 + fusion.head.stats.speed/3)
-    db.session.commit()
-
-
-def update_typing(new_type_arr, new_pokedex):
-    for species in new_type_arr:
-        new_type_primary, new_type_secondary = new_pokedex[species]['info'].type_primary, new_pokedex[species]['info'].type_secondary 
-        pokemon_to_update = db.session.execute(db.select(Pokedex).where(Pokedex.species==species, Pokedex.head==None)).scalar()
-        pokemon_to_update.type_primary, pokemon_to_update.type_secondary = new_type_primary, new_type_secondary
-    db.session.commit()
-    for species in new_type_arr:
-        head_fusions_to_update = db.session.execute(db.select(Pokedex).where(Pokedex.species==species, Pokedex.head==None)).scalar().fusions_head
-        body_fusions_to_update = db.session.execute(db.select(Pokedex).where(Pokedex.species==species, Pokedex.head==None)).scalar().fusions_body
-        for fusion in head_fusions_to_update + body_fusions_to_update:
-            type_primary, type_secondary = create_fusion_typing(fusion.head, fusion.body)
-            fusion.type_primary = type_primary
-            fusion.type_secondary = type_secondary
-        db.session.commit()
-
-
-def update_naming(new_naming_arr, new_pokedex):
-    for species in new_naming_arr:
-        new_name_1, new_name_2 = new_pokedex[species]['info'].name_1, new_pokedex[species]['info'].name_2
-        pokemon_to_update = db.session.execute(db.select(Pokedex).where(Pokedex.species==species, Pokedex.head==None)).scalar()
-        pokemon_to_update.name_1 = new_name_1
-        pokemon_to_update.name_2 = new_name_2
-    db.session.commit()
-    for species in new_naming_arr:
-        head_fusions_to_update = db.session.execute(db.select(Pokedex).where(Pokedex.species==species, Pokedex.head==None)).scalar().fusions_head
-        body_fusions_to_update = db.session.execute(db.select(Pokedex).where(Pokedex.species==species, Pokedex.head==None)).scalar().fusions_body
-        for fusion in head_fusions_to_update + body_fusions_to_update:
-            fusion.species = create_fusion_species(fusion.head.name_1, fusion.body.name_2)
-        db.session.commit()
-
-
 def main() -> None:
     with app.app_context():
         # Program start time
@@ -105,6 +39,7 @@ def main() -> None:
         full_time_t0 = time.perf_counter()
         # Checks for Duplicates
         new_pokedex = {}
+        new_pokedex_stats = {}
         duplicates= {}
         new_pokedex_numbers = {}
         pokedex_stats_dict = {}
@@ -115,22 +50,21 @@ def main() -> None:
                 for row in dex:
                     number, species = row['number'], row['species']
                     if species in new_pokedex:
-                        print(f"DUPLICATE NAME FOUND: [{number} - {species}] -> [{new_pokedex[species]['info'].number} - {species}]\nPLEASE ADDRESS DUPLICATE NAME FROM 'if-base-dex.csv'")
+                        print(f"DUPLICATE NAME FOUND: [{number} - {species}] -> [{new_pokedex[species].number} - {species}]\nPLEASE ADDRESS DUPLICATE NAME FROM 'if-base-dex.csv'")
                         exit()
                     if number in duplicates: 
                         print(f"DUPLICATE FOUND: {number}\nPLEASE REMOVE DUPLICATE FROM 'if-base-dex.csv'")
                         exit()
                     duplicates[number] = ''
                     new_pokedex[species] = {}
-                    new_pokedex[species]['info'] = Pokedex(number=number, species=species, type_primary=row['type_primary'], 
+                    new_pokedex[species] = Pokedex(number=number, species=species, type_primary=row['type_primary'], 
                                                        type_secondary=row['type_secondary'], family=row['family'], family_order=row['family_order'], 
                                                        name_1=row['name_1'], name_2=row['name_2'])
-                    new_pokedex[species]['stats'] = PokedexStats(info=new_pokedex[species]['info'], hp=int(row['hp']), attack=int(row['attack']), 
+                    new_pokedex_stats[species] = PokedexStats(info=new_pokedex[species], hp=int(row['hp']), attack=int(row['attack']), 
                                                          defense=int(row['defense']), sp_attack=int(row['sp_attack']), 
                                                          sp_defense=int(row['sp_defense']), speed=int(row['speed']))
                     new_pokedex_numbers[number] = [species]
-        old_pokedex_query = db.session.execute(db.select(Pokedex).where(Pokedex.head==None)).scalars().all()
-        old_pokedex = {entry.species: entry for entry in old_pokedex_query}
+        old_pokedex_query, old_pokedex = get_db_pokedex('base', 'species')
         old_pokedex_nums = {entry.number:entry.species for entry in old_pokedex_query}
         pokedex_to_remove = {}
         species_to_update = {}
@@ -148,12 +82,12 @@ def main() -> None:
         # CHECKS FOR ANY CHANGES IN NUMBERS OR SPECIES BETWEEN OLD AND NEW POKEDEXES
         if len(old_pokedex) > 0:
             for new_species, new_pokedex_entry in new_pokedex.items(): 
-                print(f"[{new_pokedex_entry['info'].number} - {new_species}]", end=' ')
+                print(f"[{new_pokedex_entry.number} - {new_species}]", end=' ')
             print("\n")
             for old_species, old_pokedex_entry in old_pokedex.copy().items():
                 if old_species in new_pokedex:
-                    if old_pokedex[old_species].number != new_pokedex[old_species]['info'].number:
-                        numbers_to_change[old_pokedex_entry.number] = new_pokedex[old_species]['info'].number
+                    if old_pokedex[old_species].number != new_pokedex[old_species].number:
+                        numbers_to_change[old_pokedex_entry.number] = new_pokedex[old_species].number
                 elif not 'r' in old_pokedex_entry.number:
                     replacement_species = False
                     if old_pokedex_entry.number in new_pokedex_numbers:
@@ -222,6 +156,7 @@ def main() -> None:
             print(f"Updating the following numbers {numbers_to_change}\n")
             number_change_all(numbers_to_change.copy())
 
+        # UPDATE HERE
         if len(numbers_and_species_to_change) > 0:
             print(f"Updating the following numbers and species {numbers_and_species_to_change}\n")
             for number, new in numbers_and_species_to_change.items():
@@ -236,12 +171,11 @@ def main() -> None:
         new_family_order_arr, new_stats_arr, new_type_arr, new_naming_arr = [], [], [], []
         for old_species in old_pokedex:
             if old_species in new_pokedex:
-                new_entry, old_entry = new_pokedex[old_species]['info'], old_pokedex[old_species]
+                new_entry, old_entry = new_pokedex[old_species], old_pokedex[old_species]
                 if not new_entry.__eq__(old_entry, 'family_order'):
                     new_family_order_arr.append(old_species)
                 for stat in STATS_LIST:
                     if not new_entry.stats.__eq__(old_entry.stats, stat):
-                    # if vars(new_entry.stats)[stat] != vars(old_entry.stats)[stat]:
                         new_stats_arr.append(old_species)
                         break
                 if not new_entry.__eq__(old_entry, 'type_primary', 'type_secondary'):
@@ -249,50 +183,62 @@ def main() -> None:
                 if not new_entry.__eq__(old_entry, 'name_1', 'name_2'):
                     new_naming_arr.append(old_species)
 
-        if len(new_stats_arr) > 0:
-            print(f"Updating stats for Base + Fusions for the following Pokedex numbers: {new_stats_arr}")
-            update_stats(new_stats_arr, new_pokedex)
-            print(f"stats updated for Base + Fusions")
-        if len(new_family_order_arr) > 0:
-            print(f"Updating family_order for Base + Fusions for the following Pokedex numbers: {new_family_order_arr}")
-            update_family_order(new_family_order_arr, new_pokedex)
-            print(f"family_orders udpated for Base + Fusions")
-        if len(new_type_arr) > 0:
-            print(f"Updating typing for the following Pokedex numbers: {new_type_arr}")
-            update_typing(new_type_arr, new_pokedex)
-            print(f"typing updated for Base + Fusions")
-        if len(new_naming_arr) > 0:
-            print(f"Updating Species Names for Base + Fusions for following Pokedex entries: {new_naming_arr}")
-            update_naming(new_naming_arr, new_pokedex)
-            print(f"species updated for Base + Fusions")
-        print("Existing Pokedex updated!")
+        print(f"Pokedex Numbers that require info updates:\n"
+              f"Stats: {new_stats_arr}\n"
+              f"Typing: {new_type_arr}\n"
+              f"Family Order: {new_family_order_arr}\n"
+              f"Naming Scheme: {new_naming_arr}\n")
+        update_stats(new_stats_arr, new_pokedex)
+        update_typing(new_type_arr, new_pokedex)
+        update_family_order(new_family_order_arr, new_pokedex)
+        update_naming(new_naming_arr, new_pokedex)
+
+        print("Pokedex info updates completed")
+
+        # if len(new_stats_arr) > 0:
+        #     print(f"Updating stats for Base + Fusions for the following Pokedex numbers: {new_stats_arr}")
+            
+        #     print(f"stats updated for Base + Fusions")
+        # if len(new_family_order_arr) > 0:
+        #     print(f"Updating family_order for Base + Fusions for the following Pokedex numbers: {new_family_order_arr}")
+            
+        #     print(f"family_orders udpated for Base + Fusions")
+        # if len(new_type_arr) > 0:
+        #     print(f"Updating typing for the following Pokedex numbers: {new_type_arr}")
+            
+        #     print(f"typing updated for Base + Fusions")
+        # if len(new_naming_arr) > 0:
+        #     print(f"Updating Species Names for Base + Fusions for following Pokedex entries: {new_naming_arr}")
+           
+        #     print(f"species updated for Base + Fusions")
+        # print("Existing Pokedex updated!")
 
         print("Checking for any new Pokemon. . .")
-        pokedex_query = db.session.execute(db.select(Pokedex).where(Pokedex.head==None)).scalars().all()
-        old_pokedex = {entry.species: entry for entry in pokedex_query}
+        old_pokedex_query, old_pokedex = get_db_pokedex('base', 'species')
         for new_species, pokemon in new_pokedex.items():
             if not new_species in old_pokedex:
                 new_species_to_add[new_species] = pokemon
         if len(new_species_to_add) > 0:
-            print(f"New Pokemon found {new_species_to_add.keys()}")
+            print(f"New Pokemon found {new_species_to_add.keys()}\n")
         else:
-            print("No new pokemon found")
+            print("No new pokemon found\n")
         continue_with_changes()
-        
-
         pokemon_to_add, stats_to_add = [], []
-        pokedex_full = db.session.execute(db.select(Pokedex).where(Pokedex.head==None)).scalars()
-
+        pokedex_base, pokedex_base_dict = get_db_pokedex('base', 'species')
         for species_1, pokemon_1 in new_species_to_add.items():
-            db.session.add([pokemon_1['info'], pokemon_1['stats']])
+            db.session.add(pokemon_1)
+            db.session.add(new_pokedex_stats[species_1])
             fusion, stats = create_fusion(pokemon_1, pokemon_1)
-            db.session.add_all([fusion, stats])
+            db.session.add(fusion)
+            db.session.add(stats)
             for pokemon_2 in new_species_to_add.values():
                 if pokemon_1 != pokemon_2:
                     fusion, stats = create_fusion(pokemon_1, pokemon_2)
                     pokemon_to_add.append(fusion)
                     stats_to_add.append(stats)
-            for pokemon_2 in pokedex_full:
+            for pokemon_2 in pokedex_base:
+                print(pokemon_1)
+                print(pokemon_2)
                 fusion, stats = create_fusion(pokemon_1, pokemon_2)
                 pokemon_to_add.append(fusion)
                 stats_to_add.append(stats)
@@ -303,9 +249,7 @@ def main() -> None:
         db.session.add_all(stats_to_add)
         db.session.commit()
 
-        pokedex_full = db.session.execute(db.select(Pokedex)).scalars()
-        pokedex_full_dict = {entry.number: entry for entry in pokedex_full}
-        pokedex_base = db.session.execute(db.select(Pokedex).where(Pokedex.head==None)).scalars()
+        pokedex_base, pokedex_base_dict = get_db_pokedex('base')
         pokedex_lst_path = os.getenv('POKEDEX_HTML_PATH')
         with open(pokedex_lst_path, 'w') as pokedex_list:
             pokedex_list.write('<datalist id="pokedex">\n')
@@ -328,16 +272,15 @@ def main() -> None:
                     artists_to_add.append(Artist(name=artist))
             db.session.add_all(artists_to_add)
             db.session.commit()
+        print("New Artists Added")
 
-        sprites_to_add = []
-
-        pokedex_full = db.session.execute(db.select(Pokedex)).scalars()
-        pokedex_full_dict = {pokemon.number: pokemon for pokemon in pokedex_full}
+        pokedex_full, pokedex_full_dict = get_db_pokedex('full', 'number')
         artist_full = db.session.execute(db.select(Artist)).scalars()
         artist_full_dict = {artist.name: artist for artist in artist_full}
         sprites_full = db.session.execute(db.select(Sprite)).scalars()
         sprites_full_dict = {sprite.sprite_code(): sprite for sprite in sprites_full}
         sprites_to_delete = sprites_full_dict.copy()
+        sprites_to_add = []
         artist_changes = {}
 
         with open(SPRITES_CREDITS_PATH, newline='', errors='ignore') as sprites_file:
@@ -427,7 +370,7 @@ def main() -> None:
             if len(artist_changes) > 0:
                 artist_updates_log.write(f"ARTISTS CHANGES:\n")
                 for sprite_code, artist_switch in artist_changes.items():
-                    artist_updates_log.write(f"{sprite_code}: {artist_switch}\n")
+                    artist_updates_log.write(f"{sprite_code}: {artist_switch['before']} -> {artist_switch['after']}\n")
 
         with open(f"{POKEDEX_UPDATES_PATH}{START_TIME}_pokedex-updates.txt", 'w') as pokedex_updates_log:
             pokedex_updates_log.write(f"POKEDEX UPDATES - {START_TIME}\n")
@@ -459,11 +402,11 @@ def main() -> None:
                             # Split each filename to determine correct directory
                             split_filename = filename.split(".")
                             if split_filename[0].isdigit() or split_filename[0] in PASS_LST:
-                                dst = sprite_dir_path + "/" + split_filename[0]
-                                shutil.move(os.path.join(new_sprites_path, filename), os.path.join(dst, filename))
+                                destination = sprite_dir_path + "/" + split_filename[0]
+                                shutil.move(os.path.join(new_sprites_path, filename), os.path.join(destination, filename))
                             elif split_filename[0][-1].isalpha() and (split_filename[0][:-1].isdigit() or split_filename[0][:-1] in PASS_LST):
-                                dst = sprite_dir_path + "/" + split_filename[0][:-1]
-                                shutil.move(os.path.join(new_sprites_path, filename), os.path.join(dst, filename))
+                                destination = sprite_dir_path + "/" + split_filename[0][:-1]
+                                shutil.move(os.path.join(new_sprites_path, filename), os.path.join(destination, filename))
                             else:
                                 not_moved.append(filename)
                         else:
@@ -518,7 +461,7 @@ def create_fusion_species(name_1, name_2):
 
 
 def create_fusion_stats(pokemon_1, pokemon_2):
-    fused_stats = Pokedex(hp=int(2 * (pokemon_1.stats.hp)/3 + (pokemon_2.stats.hp)/3),
+    fused_stats = PokedexStats(hp=int(2 * (pokemon_1.stats.hp)/3 + (pokemon_2.stats.hp)/3),
                           attack=int(2 * (pokemon_2.stats.attack)/3 + (pokemon_1.stats.attack)/3),
                           defense=int(2 * (pokemon_2.stats.defense)/3 + (pokemon_1.stats.defense)/3),
                           sp_attack=int(2 * pokemon_1.stats.sp_attack/3 + pokemon_2.stats.sp_attack/3),
@@ -615,6 +558,88 @@ def number_change_db_updates(old_number, new_number) -> None:
         fusion.number = f"{fusion.head.number}.{fusion.body.number}"
     db.session.commit()
 
+
+def update_family_order(new_family_order_arr, new_pokedex):
+    for species in new_family_order_arr:
+        pokemon_to_update = db.session.execute(db.select(Pokedex).where(Pokedex.species==species, Pokedex.head==None)).scalar()
+        pokemon_to_update.family_order = new_pokedex[species].family_order
+    db.session.commit()
+    for species in new_family_order_arr:
+        head_fusions_to_update = db.session.execute(db.select(Pokedex).where(Pokedex.species==species, Pokedex.head==None)).scalar().fusions_head
+        body_fusions_to_update = db.session.execute(db.select(Pokedex).where(Pokedex.species==species, Pokedex.head==None)).scalar().fusions_body
+        for fusion in head_fusions_to_update + body_fusions_to_update:
+            fusion.family_order = f"{fusion.head.family_order}.{fusion.body.family_order}"
+    db.session.commit()
+
+
+def update_stats(new_stats_arr, new_pokedex):
+    for species in new_stats_arr:
+        new_stats = new_pokedex[species].stats
+        pokemon_to_update = db.session.execute(db.select(Pokedex).where(Pokedex.species==species, Pokedex.head==None)).scalar().stats
+        pokemon_to_update.hp, pokemon_to_update.attack, pokemon_to_update.defense, \
+            pokemon_to_update.sp_attack, pokemon_to_update.sp_defense, pokemon_to_update.speed = \
+        new_stats.hp, new_stats.attack, new_stats.defense, new_stats.sp_attack, new_stats.sp_defense, new_stats.speed
+    db.session.commit()
+    for species in new_stats_arr:
+        head_fusions_to_update = db.session.execute(db.select(Pokedex).where(Pokedex.species==species, Pokedex.head==None)).scalar().fusions_head
+        body_fusions_to_update = db.session.execute(db.select(Pokedex).where(Pokedex.species==species, Pokedex.head==None)).scalar().fusions_body
+        for fusion in head_fusions_to_update + body_fusions_to_update:
+            fusion.stats.hp = int(2 * fusion.head.stats.hp/3 + fusion.body.stats.hp/3)
+            fusion.stats.attack = int(2 * fusion.body.stats.attack/3 + fusion.head.stats.attack/3)
+            fusion.stats.defense = int(2 * fusion.body.stats.defense/3 + fusion.head.stats.defense/3)
+            fusion.stats.sp_attack = int(2 * fusion.head.stats.sp_attack/3 + fusion.body.stats.sp_attack/3)
+            fusion.stats.sp_defense = int(2 * fusion.head.stats.sp_defense/3 + fusion.body.stats.sp_defense/3)
+            fusion.stats.speed = int(2 * fusion.body.stats.speed/3 + fusion.head.stats.speed/3)
+    db.session.commit()
+
+
+def update_typing(new_type_arr, new_pokedex):
+    for species in new_type_arr:
+        new_type_primary, new_type_secondary = new_pokedex[species].type_primary, new_pokedex[species].type_secondary 
+        pokemon_to_update = db.session.execute(db.select(Pokedex).where(Pokedex.species==species, Pokedex.head==None)).scalar()
+        pokemon_to_update.type_primary, pokemon_to_update.type_secondary = new_type_primary, new_type_secondary
+    db.session.commit()
+    for species in new_type_arr:
+        head_fusions_to_update = db.session.execute(db.select(Pokedex).where(Pokedex.species==species, Pokedex.head==None)).scalar().fusions_head
+        body_fusions_to_update = db.session.execute(db.select(Pokedex).where(Pokedex.species==species, Pokedex.head==None)).scalar().fusions_body
+        for fusion in head_fusions_to_update + body_fusions_to_update:
+            type_primary, type_secondary = create_fusion_typing(fusion.head, fusion.body)
+            fusion.type_primary = type_primary
+            fusion.type_secondary = type_secondary
+        db.session.commit()
+
+
+def update_naming(new_naming_arr, new_pokedex):
+    for species in new_naming_arr:
+        new_name_1, new_name_2 = new_pokedex[species].name_1, new_pokedex[species].name_2
+        pokemon_to_update = db.session.execute(db.select(Pokedex).where(Pokedex.species==species, Pokedex.head==None)).scalar()
+        pokemon_to_update.name_1 = new_name_1
+        pokemon_to_update.name_2 = new_name_2
+    db.session.commit()
+    for species in new_naming_arr:
+        head_fusions_to_update = db.session.execute(db.select(Pokedex).where(Pokedex.species==species, Pokedex.head==None)).scalar().fusions_head
+        body_fusions_to_update = db.session.execute(db.select(Pokedex).where(Pokedex.species==species, Pokedex.head==None)).scalar().fusions_body
+        for fusion in head_fusions_to_update + body_fusions_to_update:
+            fusion.species = create_fusion_species(fusion.head.name_1, fusion.body.name_2)
+        db.session.commit()
+
+
+def get_db_pokedex(pokedex_type, dict_key):
+    if pokedex_type == 'base':
+        db_pokedex_query = db.session.scalars(db.select(Pokedex).where(Pokedex.head==None))
+    elif pokedex_type == 'full':
+        db_pokedex_query = db.session.scalars(db.select(Pokedex))
+    else:
+        raise ValueError("get_db_pokedex() pokedex_type parameter must be 'base' or 'full'")
+    
+    if dict_key == 'species':
+        db_pokedex = {entry.species: entry for entry in db_pokedex_query}
+    elif dict_key == 'number':
+        db_pokedex = {entry.number: entry for entry in db_pokedex_query}
+    else:
+        raise ValueError("get_db_pokedex() dict_type parameter must be 'species' or 'number'") 
+    
+    return db_pokedex_query, db_pokedex
 
 if __name__ == "__main__":
     main()
