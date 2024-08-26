@@ -54,78 +54,76 @@
         </div>
         {% for row, player_numbers in master_dict.items() %}
           <div class="row shadow p-3 mb-3 bg-body-tertiary rounded">
-            {% for player, fusion_names in player_numbers.items() %}
+            {% for player, fusions in player_numbers.items() %}
               <div class="col-lg-{{ column_widths['player_column'] }} shadow">
-                {% for fusion_name, fusions in fusion_names.items() %}
-                  <div class="row"><h3 style="text-align: center;">{{ fusion_name }}</h3></div>
-                  <div class="row curr_fusions">
-                    {% for flip, fusion in fusions['current'].items() %}
-                      <div class="col-lg-6"> <!-- Normal + Swap -->
-                        <div class="row">
-                          <div class="col-lg-6"> <!-- Species + Typing -->
-                            <h5 style="text-align:center">{{ fusion.species }} -</h5>
-                            <h6 style="text-align:center">{{ fusion.typing() }}</h6>
-                            <br>
-                            <center><img style="text-align:center" src="{{ url_for('main.static', filename='images/sprites/' ~ fusion.head.number ~ '/' ~ fusion.number ~ '.png') }}" onerror="this.onerror=null; this.src='/main/static/images/sprites/default/default.png'" width="150" height="150"></center>
-                            <br>
-                            artist: {{fusion.sprites[0].artists.name}}
-                            <br><br>
-                            <a target ="_blank" rel="noopener noreferrer" href="https://if.daena.me/{{ fusion.number }}/">More info on FusionDex</a>
-                          </div>
-                          <div class="col-lg-6"> <!-- Pokemon Stats -->
-                            HP: {{ fusion.stats.hp }}<div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="120" style="height: 10px">
-                              <div class="progress-bar bg-info" style="width:{{fusion.stats.hp/255 * 100}}%"></div></div>
-                            Attack: {{ fusion.stats.attack }}<div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="120" style="height: 10px">
-                              <div class="progress-bar bg-info" style="width:{{fusion.stats.attack/255 * 100}}%"></div></div>
-                            Defense: {{ fusion.stats.defense }}<div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="120" style="height: 10px">
-                              <div class="progress-bar bg-info" style="width:{{fusion.stats.defense/255 * 100}}%"></div></div>
-                            Sp. Attack: {{ fusion.stats.sp_attack }}<div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="120" style="height: 10px">
-                              <div class="progress-bar bg-info" style="width:{{fusion.stats.sp_attack/255 * 100}}%"></div></div>
-                            Sp. Defense: {{ fusion.stats.sp_defense }}<div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="120" style="height: 10px">
-                              <div class="progress-bar bg-info" style="width:{{fusion.stats.sp_defense/255 * 100}}%"></div></div>
-                            Speed: {{ fusion.stats.speed }}<div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="120" style="height: 10px">
-                              <div class="progress-bar bg-info" style="width:{{fusion.stats.speed/255 * 100}}%"></div></div>
-                            Total: {{ fusion.stats.total() }}<div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="120" style="height: 10px">
-                              <div class="progress-bar bg-info" style="width:{{fusion.stats.total()/255 * 100}}%"></div></div> 
-                          </div>
+                <div class="row"><h3 style="text-align: center;">{{ fusions['species'] }}</h3></div>
+                <div class="row curr_fusions">
+                  {% for type, fusion in fusions['current'].items() %}
+                    <div class="col-lg-6"> <!-- Normal + Swap -->
+                      <div class="row">
+                        <div class="col-lg-6"> <!-- Species + Typing -->
+                          <h5 style="text-align:center">{{ fusion.species }} -</h5>
+                          <h6 style="text-align:center">{{ fusion.typing() }}</h6>
+                          <br>
+                          <center><img style="text-align:center" src="{{ url_for('main.static', filename='images/sprites/' ~ fusion.head.number ~ '/' ~ fusion.number ~ '.png') }}" onerror="this.onerror=null; this.src='/main/static/images/sprites/default/default.png'" width="150" height="150"></center>
+                          <br>
+                          artist: {{fusion.sprites[0].artists.name}}
+                          <br><br>
+                          <a target ="_blank" rel="noopener noreferrer" href="https://if.daena.me/{{ fusion.number }}/">More info on FusionDex</a>
+                        </div>
+                        <div class="col-lg-6"> <!-- Pokemon Stats -->
+                          HP: {{ fusion.stats.hp }}<div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="120" style="height: 10px">
+                            <div class="progress-bar bg-info" style="width:{{fusion.stats.hp/255 * 100}}%"></div></div>
+                          Attack: {{ fusion.stats.attack }}<div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="120" style="height: 10px">
+                            <div class="progress-bar bg-info" style="width:{{fusion.stats.attack/255 * 100}}%"></div></div>
+                          Defense: {{ fusion.stats.defense }}<div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="120" style="height: 10px">
+                            <div class="progress-bar bg-info" style="width:{{fusion.stats.defense/255 * 100}}%"></div></div>
+                          Sp. Attack: {{ fusion.stats.sp_attack }}<div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="120" style="height: 10px">
+                            <div class="progress-bar bg-info" style="width:{{fusion.stats.sp_attack/255 * 100}}%"></div></div>
+                          Sp. Defense: {{ fusion.stats.sp_defense }}<div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="120" style="height: 10px">
+                            <div class="progress-bar bg-info" style="width:{{fusion.stats.sp_defense/255 * 100}}%"></div></div>
+                          Speed: {{ fusion.stats.speed }}<div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="120" style="height: 10px">
+                            <div class="progress-bar bg-info" style="width:{{fusion.stats.speed/255 * 100}}%"></div></div>
+                          Total: {{ fusion.stats.total() }}<div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="120" style="height: 10px">
+                            <div class="progress-bar bg-info" style="width:{{fusion.stats.total()/255 * 100}}%"></div></div> 
                         </div>
                       </div>
-                    {% endfor %}
-                  </div>
-                  <div class="row final_fusions" style="display:none">
-                    {% for flip, fusion in fusions['final'].items() %}
-                      <div class="col-lg-6"> <!-- Normal + Swap-->
-                        <div class="row">
-                          <div class="col-lg-6"> <!-- Species + Typing -->
-                            {{ fusion.species }} - {{ fusion.typing() }}
-                            <br>
-                            <center><img src="{{ url_for('main.static', filename='images/sprites/' ~ fusion.head.number ~ '/' ~ fusion.number ~ '.png') }}" onerror="this.onerror=null; this.src='/main/static/images/sprites/default/default.png'" width="150" height="150"></center>
-                            <br>
-                            artist: {{fusion.sprites[0].artists.name}}
-                            <br><br>
-                            <a target ="_blank" rel="noopener noreferrer" href="https://if.daena.me/{{ fusion.number }}/">More info on FusionDex</a>
-                          </div>
-                          <div class="col-lg-6"> <!-- Stats -->
-                            HP: {{ fusion.stats.hp }}<div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="120" style="height: 10px">
-                              <div class="progress-bar bg-info" style="width:{{fusion.stats.hp/255 * 100}}%"></div></div>
-                            Attack: {{ fusion.stats.attack }}<div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="120" style="height: 10px">
-                              <div class="progress-bar bg-info" style="width:{{fusion.stats.attack/255 * 100}}%"></div></div>
-                            Defense: {{ fusion.stats.defense }}<div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="120" style="height: 10px">
-                              <div class="progress-bar bg-info" style="width:{{fusion.stats.defense/255 * 100}}%"></div></div>
-                            Sp. Attack: {{ fusion.stats.sp_attack }}<div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="120" style="height: 10px">
-                              <div class="progress-bar bg-info" style="width:{{fusion.stats.sp_attack/255 * 100}}%"></div></div>
-                            Sp. Defense: {{ fusion.stats.sp_defense }}<div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="120" style="height: 10px">
-                              <div class="progress-bar bg-info" style="width:{{fusion.stats.sp_defense/255 * 100}}%"></div></div>
-                            Speed: {{ fusion.stats.speed }}<div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="120" style="height: 10px">
-                              <div class="progress-bar bg-info" style="width:{{fusion.stats.speed/255 * 100}}%"></div></div>
-                            Total: {{ fusion.stats.total() }}<div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="120" style="height: 10px">
-                              <div class="progress-bar bg-info" style="width:{{fusion.stats.total()/255 * 100}}%"></div></div> 
-                          </div>
+                    </div>
+                  {% endfor %}
+                </div>
+                <div class="row final_fusions" style="display:none">
+                  {% for type, fusion in fusions['final'].items() %}
+                    <div class="col-lg-6"> <!-- Normal + Swap-->
+                      <div class="row">
+                        <div class="col-lg-6"> <!-- Species + Typing -->
+                          {{ fusion.species }} - {{ fusion.typing() }}
+                          <br>
+                          <center><img src="{{ url_for('main.static', filename='images/sprites/' ~ fusion.head.number ~ '/' ~ fusion.number ~ '.png') }}" onerror="this.onerror=null; this.src='/main/static/images/sprites/default/default.png'" width="150" height="150"></center>
+                          <br>
+                          artist: {{fusion.sprites[0].artists.name}}
+                          <br><br>
+                          <a target ="_blank" rel="noopener noreferrer" href="https://if.daena.me/{{ fusion.number }}/">More info on FusionDex</a>
+                        </div>
+                        <div class="col-lg-6"> <!-- Stats -->
+                          HP: {{ fusion.stats.hp }}<div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="120" style="height: 10px">
+                            <div class="progress-bar bg-info" style="width:{{fusion.stats.hp/255 * 100}}%"></div></div>
+                          Attack: {{ fusion.stats.attack }}<div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="120" style="height: 10px">
+                            <div class="progress-bar bg-info" style="width:{{fusion.stats.attack/255 * 100}}%"></div></div>
+                          Defense: {{ fusion.stats.defense }}<div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="120" style="height: 10px">
+                            <div class="progress-bar bg-info" style="width:{{fusion.stats.defense/255 * 100}}%"></div></div>
+                          Sp. Attack: {{ fusion.stats.sp_attack }}<div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="120" style="height: 10px">
+                            <div class="progress-bar bg-info" style="width:{{fusion.stats.sp_attack/255 * 100}}%"></div></div>
+                          Sp. Defense: {{ fusion.stats.sp_defense }}<div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="120" style="height: 10px">
+                            <div class="progress-bar bg-info" style="width:{{fusion.stats.sp_defense/255 * 100}}%"></div></div>
+                          Speed: {{ fusion.stats.speed }}<div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="120" style="height: 10px">
+                            <div class="progress-bar bg-info" style="width:{{fusion.stats.speed/255 * 100}}%"></div></div>
+                          Total: {{ fusion.stats.total() }}<div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="120" style="height: 10px">
+                            <div class="progress-bar bg-info" style="width:{{fusion.stats.total()/255 * 100}}%"></div></div> 
                         </div>
                       </div>
-                    {% endfor %}
-                  </div>
-                {% endfor %}
+                    </div>
+                  {% endfor %}
+                </div>
               </div>
             {% endfor %}
           </div>

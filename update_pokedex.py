@@ -224,7 +224,7 @@ def main() -> None:
             print("No new pokemon found\n")
         continue_with_changes()
         pokemon_to_add, stats_to_add = [], []
-        pokedex_base, pokedex_base_dict = get_db_pokedex('base', 'species')
+        pokedex_base_query, pokedex_base = get_db_pokedex('base', 'species')
         for species_1, pokemon_1 in new_species_to_add.items():
             db.session.add(pokemon_1)
             db.session.add(new_pokedex_stats[species_1])
@@ -236,7 +236,7 @@ def main() -> None:
                     fusion, stats = create_fusion(pokemon_1, pokemon_2)
                     pokemon_to_add.append(fusion)
                     stats_to_add.append(stats)
-            for pokemon_2 in pokedex_base:
+            for pokemon_2 in pokedex_base.values():
                 print(pokemon_1)
                 print(pokemon_2)
                 fusion, stats = create_fusion(pokemon_1, pokemon_2)
@@ -249,7 +249,7 @@ def main() -> None:
         db.session.add_all(stats_to_add)
         db.session.commit()
 
-        pokedex_base, pokedex_base_dict = get_db_pokedex('base')
+        pokedex_base, pokedex_base_dict = get_db_pokedex('base', 'species')
         pokedex_lst_path = os.getenv('POKEDEX_HTML_PATH')
         with open(pokedex_lst_path, 'w') as pokedex_list:
             pokedex_list.write('<datalist id="pokedex">\n')
@@ -325,11 +325,11 @@ def main() -> None:
                 if sprite.artists == japeal and sprite.number in pokedex_full_dict:
                     del sprites_to_delete[sprite_code]
             
-            print(f"Sprites Deleted: {sprites_to_delete}")
+            # print(f"Sprites Deleted: {sprites_to_delete}")
             for sprite_code, sprite in sprites_to_delete.items():
                 db.session.delete(sprite)
             
-            print(f"Number of Sprites Added {sprites_to_add}")
+            # print(f"Number of Sprites Added {sprites_to_add}")
             db.session.add_all(sprites_to_add)
             db.session.commit()
         
@@ -337,7 +337,7 @@ def main() -> None:
         pokedex_needs_sprites = db.session.execute(db.select(Pokedex).where(Pokedex.sprites==None)).scalars()
         japeal_sprites_to_add = []
         for entry in pokedex_needs_sprites:
-            basic_sprite = Sprite(variant_let='', artists=japeal, number=entry)
+            basic_sprite = Sprite(variant_let='', artists=japeal, info=entry)
             japeal_sprites_to_add.append(basic_sprite)
         db.session.add_all(japeal_sprites_to_add)
         db.session.commit()

@@ -180,26 +180,32 @@ def preview_fusions(player_num, link_id):
             for pokemon_1 in pokemons_1:
                 for pokemon_2 in pokemons_2:
                     fusion_names = f"{pokemon_1.info.species} + {pokemon_2.info.species}"
-                    preview_fusions_dict[count_1][player.number][fusion_names] = {'current':{}, 'final':{}}
-                    preview_fusions_dict[count_1][player.number][fusion_names]['current']['norm'] = db.session.scalar(db.select(Pokedex).where(Pokedex.head==pokemon_1.info, Pokedex.body==pokemon_2.info))
-                    preview_fusions_dict[count_1][player.number][fusion_names]['current']['swap'] = db.session.scalar(db.select(Pokedex).where(Pokedex.head==pokemon_2.info, Pokedex.body==pokemon_1.info))
-                    preview_fusions_dict[count_1][player.number][fusion_names]['final']['norm'] = db.session.scalar(db.select(Pokedex).where(Pokedex.family==f"{pokemon_1.info.family}.{pokemon_2.info.family}").order_by(Pokedex.family_order.desc()))
-                    preview_fusions_dict[count_1][player.number][fusion_names]['final']['swap'] = db.session.scalar(db.select(Pokedex).where(Pokedex.family==f"{pokemon_2.info.family}.{pokemon_1.info.family}").order_by(Pokedex.family_order.desc()))
+                    preview_fusions_dict[count_1][player.number] = {'species':f"{pokemon_1.info.species} + {pokemon_2.info.species}",
+                                                                    'current':{},
+                                                                    'final':{}}
+                    preview_fusions_dict[count_1][player.number]['current']['norm'] = db.session.scalar(db.select(Pokedex).where(Pokedex.head==pokemon_1.info, Pokedex.body==pokemon_2.info))
+                    preview_fusions_dict[count_1][player.number]['current']['swap'] = db.session.scalar(db.select(Pokedex).where(Pokedex.head==pokemon_2.info, Pokedex.body==pokemon_1.info))
+                    preview_fusions_dict[count_1][player.number]['final']['norm'] = db.session.scalar(db.select(Pokedex).where(Pokedex.family==f"{pokemon_1.info.family}.{pokemon_2.info.family}").order_by(Pokedex.family_order.desc()))
+                    preview_fusions_dict[count_1][player.number]['final']['swap'] = db.session.scalar(db.select(Pokedex).where(Pokedex.family==f"{pokemon_2.info.family}.{pokemon_1.info.family}").order_by(Pokedex.family_order.desc()))
         count_1 = count_1 + 1
     for row, player_numbers in preview_fusions_dict.items():
         print(f"Row: {row}")
-        for player, fusion_names in player_numbers.items():
-            print(f"Player:{player}\nFusion Names:{fusion_names}")
-            for fusion_name, fusions in fusion_names.items():
-                print(fusion_name)
-                print("CURRENT")
-                for flip, fusion in fusions['current'].items():
-                    print(f"FLIP: {flip}")
-                    print(f"FUSION: {fusion}")
-                print("FINAL")
-                for flip, fusion in fusions['final'].items():
-                    print(f"FLIP: {flip}")
-                    print(f"FUSION: {fusion}")
+        for player, fusions in player_numbers.items():
+            print(f"Player:{player}\nFusion Names:{fusions['species']}")
+            for type, fusion in fusions['current'].items():
+                print(f"{type}\n{fusion}")
+            for type, fusion in fusions['final'].items():
+                print(f"{type}\n{fusion}")
+            # for fusion_name, fusions in fusion_names.items():
+            #     print(fusion_name)
+            #     print(fusions)
+            #     for flip, fusion in fusions['current'].items():
+            #         print(f"FLIP: {flip}")
+            #         print(f"FUSION: {fusion}")
+            #     print("FINAL")
+            #     for flip, fusion in fusions['final'].items():
+            #         print(f"FLIP: {flip}")
+            #         print(f"FUSION: {fusion}")
     
     return render_template('preview_fusions.html',
                            players=players,
