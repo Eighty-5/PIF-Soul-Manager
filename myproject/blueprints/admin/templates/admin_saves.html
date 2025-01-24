@@ -13,19 +13,27 @@
         <td class="title">Players</td>
         <td class="title">Ruleset</td>
         <td class="title">Route Tracking</td>
+        <td class="title">Current Status</td>
         <td class="title">Delete</td>
     </tr>
     {% for save in saves %}
         <tr>
             <td>Save Id: {{ save.id }}</td>
             <td>Save User: {{ save.user_id }}</td>
-            <td>Save Number: {{ save.number }}</td>
+            <td>Save Number: {{ save.save_number }}</td>
             <td>{% for player in save.players %}
-                Player {{ player.player_num }}: {{ player.name }}<br>
+                Player {{ player.player_num }}: {{ player.player_name }}<br>
             {% endfor %}</td>
             <td>{{ save.ruleset }}</td>
             <td>{{ save.route_tracking }}</td>
-            <td><a href="{{ url_for('admin.admin_delete_save', save_id=save.id) }}" class="btn btn-danger">Delete</a></td>
+            <td>{{ save.current_status }}</td>
+            <td>
+              <a href="{{ url_for('admin.admin_delete_save', save_id=save.id) }}" class="btn btn-danger">Delete</a>
+              <!-- <form action="{{ url_for('admin.admin_delete_save', save_id=save.id) }}" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <button type="submit submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this save?')">Delete</button>
+              </form> -->
+            </td>
         </tr>
     {% endfor %}
 </table>

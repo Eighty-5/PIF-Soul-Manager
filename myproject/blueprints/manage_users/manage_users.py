@@ -38,8 +38,9 @@ def login():
 @manage_users.route('/logout', methods=['GET', 'POST'])
 @login_required
 def logout():
-    current_save = db.session.scalar(db.select(Save).where(Save.users==current_user, Save.current==True))
-    current_save.current = False
+    current_save = db.session.scalar(db.select(Save).where(Save.user_info==current_user, Save.current_status==True))
+    if current_save:
+        current_save.current = False
     db.session.commit()
     logout_user()
     flash("You have been Logged Out Successfully!")

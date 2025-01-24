@@ -18,12 +18,12 @@
     {% for player in players %}
         <tr>
             <td>{{ player.id }}</td>
-            <td>{{ player.name }}</td>
-            <td>{{ player.number }}</td>
-            <td>{{ player.saves.id }}</td>
-            <td>{{ player.saves.number }}</td>
-            <td>{{ player.saves.users.id }}</td>
-            <td>{{ player.saves.users.username }}</td>
+            <td>{{ player.player_name }}</td>
+            <td>{{ player.player_number }}</td>
+            <td>{{ player.save_info.id }}</td>
+            <td>{{ player.save_info.save_number }}</td>
+            <td>{{ player.save_info.user_info.id }}</td>
+            <td>{{ player.save_info.user_info.username }}</td>
         </tr>
     {% endfor %}
 </table>

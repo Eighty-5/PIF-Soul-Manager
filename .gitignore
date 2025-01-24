@@ -5,7 +5,7 @@ __pycache__/
 old_scripts.py
 tasks.txt
 migrations/
-myproject/blueprints/main/static/images/sprites/*
+myproject/blueprints/main/static/images/sprites/* 
 pokedex_stuff/if-pokedex.csv
 pokedex_stuff/dna_sprites.txt
 pokedex_stuff/pokedex.txt

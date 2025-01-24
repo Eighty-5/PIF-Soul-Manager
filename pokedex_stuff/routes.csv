@@ -1,4 +1,4 @@
-id,route
+number,route
 1,Azalea Town
 2,Bell Tower
 3,Berry Forest
@@ -61,74 +61,72 @@ id,route
 60,Rock Tunnel
 61,Rocket Warehouse
 62,Route 1
-63,Route 2 B.VF (Before the Viridian Forest)
-64,Route 2 A.VF (After the Viridian Forest)
-65,Route 3
-66,Route 4
-67,Route 5
-68,Route 6
-69,Route 7
-70,Route 8
-71,Route 9
-72,Route 10 B.RT (Before Rock Tunnel)
-73,Route 10 A.RT (After Rock Tunnel)
-74,Route 11
-75,Route 12
-76,Route 13
-77,Route 14
-78,Route 15
-79,Route 16
-80,Route 17
-81,Route 18
-82,Route 19
-83,Route 20
-84,Route 21
-85,Route 22
-86,Route 23
-87,Route 24
-88,Route 25
-89,Route 26
-90,Route 27
-91,Route 29
-92,Route 30
-93,Route 31
-94,Route 32
-95,Route 33
-96,Route 34
-97,Route 35
-98,Route 36
-99,Route 37
-100,Route 42
-101,Route 43
-102,Route 44
-103,Route 46
-104,Ruby Chamber
-105,Ruins of Alph
-106,S.S. Anne
-107,Safari Zone
-108,Safari Zone (Area 1)
-109,Safari Zone (Area 2)
-110,Safari Zone (Area 3)
-111,Safari Zone (Area 4)
-112,Safari Zone (Area 5)
-113,Safari Zone Temple
-114,Saffron City
-115,Sapphire Cave
-116,Seafoam Islands
-117,Secret Garden
-118,Sevii Islands
-119,Silph Co. Head Office
-120,Sky Pillar
-121,Submerged Temple
-122,Tohjo Falls
-123,Treasure Beach
-124,Triple Battle Lounge
-125,Underground Paths
-126,Union Cave
-127,Vermillion City
-128,Victory Road
-129,Violet City
-130,Viridian City
-131,Viridian Forest
-132,Viridian River
-133,Water Labyrinth
+63,Route 2
+64,Route 3
+65,Route 4
+66,Route 5
+67,Route 6
+68,Route 7
+69,Route 8
+70,Route 9
+71,Route 10
+72,Route 11
+73,Route 12
+74,Route 13
+75,Route 14
+76,Route 15
+77,Route 16
+78,Route 17
+79,Route 18
+80,Route 19
+81,Route 20
+82,Route 21
+83,Route 22
+84,Route 23
+85,Route 24
+86,Route 25
+87,Route 26
+88,Route 27
+89,Route 29
+90,Route 30
+91,Route 31
+92,Route 32
+93,Route 33
+94,Route 34
+95,Route 35
+96,Route 36
+97,Route 37
+98,Route 42
+99,Route 43
+100,Route 44
+101,Route 46
+102,Ruby Chamber
+103,Ruins of Alph
+104,S.S. Anne
+105,Safari Zone
+106,Safari Zone (Area 1)
+107,Safari Zone (Area 2)
+108,Safari Zone (Area 3)
+109,Safari Zone (Area 4)
+110,Safari Zone (Area 5)
+111,Safari Zone Temple
+112,Saffron City
+113,Sapphire Cave
+114,Seafoam Islands
+115,Secret Garden
+116,Sevii Islands
+117,Silph Co. Head Office
+118,Sky Pillar
+119,Submerged Temple
+120,Tohjo Falls
+121,Treasure Beach
+122,Triple Battle Lounge
+123,Underground Paths
+124,Union Cave
+125,Vermillion City
+126,Victory Road
+127,Violet City
+128,Viridian City
+129,Viridian Forest
+130,Viridian River
+131,Water Labyrinth

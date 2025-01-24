@@ -9,8 +9,8 @@
     <tr>
         <td class="title">User ID</td>
         <td class="title">Username</td>
-        <td class="title">Sessions</td>
-        <td class="title">Current Sessions</td>
+        <td class="title">Saves</td>
+        <td class="title">Current Save (number)</td>
         <td class="title">Hash</td>
         <td class="title">Last Login</td>
     </tr>
@@ -18,8 +18,8 @@
         <tr>
             <td>{{ user.id }}. </td>
             <td>{{ user.username }}</td>
-            <td>{{ user.sessions }}</td>
-            <td>{{ user.current_session }}</td>
+            <td>{{ user.saves }}</td>
+            <td>{{ user.current_save().save_number }}</td>
             <td>{{ user.hash }}</td>
             <td>{{ user.last_login }}</td>
             <td><a href="{{ url_for('manage_users.delete_user',id=user.id) }}">Delete</a></td>

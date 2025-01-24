@@ -1,8 +1,12 @@
-def find_first_missing_save_number(lst):
+from ...extensions import db
+from ...models import User, Player, Pokedex, Pokemon, Save, Artist, RouteList, SoulLink, Route
+from ...utils import func_timer
+
+def first_available_save_number(lst):
     try:
         return sorted(set(range(1, 4)) - set(lst))[0]
     except IndexError:
-        return False
+        return None
     
 def get_column_widths(player_count):
     column_widths = {}
@@ -12,3 +16,4 @@ def get_column_widths(player_count):
     else:
         column_widths['box_column'] = 6
     return column_widths
+

@@ -6,11 +6,13 @@ from .models import User
 from dotenv import load_dotenv
 from flask_migrate import Migrate
 
+
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy import select
 
 import os
 import jinja2
+import logging
 
 from .blueprints.main.main import main
 from .blueprints.admin.admin import admin
@@ -31,6 +33,13 @@ def create_app():
 
     # Secret Key
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
+
+    # Additional Config
+    app.config['SQLALCHMEY_ECHO'] = True
+
+    # Configure Logging
+    # logging.basicConfig()
+    # logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
 
     # Add zip to jinja
     app.jinja_env.globals.update(zip=zip)

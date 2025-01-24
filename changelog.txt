@@ -78,3 +78,9 @@ Removed any unnecessary files for updater in pokedex_stuff subdirectory
 Changed "session" to "save" throughout to reduce confusion between user sessions vs application/database sessions
 
 20-Aug-2024
+Updated all pokemon blueprint routes for SQLAlchemy 2.0
+
+8-Jan-205
+Removed unnecessary create_route_list.py script as its incorparted into updater script
+create_db.py script updated to allow a MySQL, PostgreSQL or SQLite DB
+Added better timer decorator for timing updater.py

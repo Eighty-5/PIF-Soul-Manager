@@ -8,7 +8,12 @@
 {% endblock %}
 
 {% block header %}
-  Save {{ save.number }} Manager - Ruleset {{ save.ruleset }}
+  Save {{ save.save_number }} Manager - Ruleset {{ save.ruleset }}
+  <br></br>
+  <form action="{{ url_for('main.preview_all_fusions') }}" method="post" style="display: inline-block;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    <button type="button submit" class="btn btn-info">Preview All Fusions</button>
+  </form>
 {% endblock %}
 
 {% block main %}
@@ -16,54 +21,58 @@
   <!-- Add Pokemon Section -->
   <div class="accordion-item">
     <h2 class="accordion-header" id="headingOne">
-      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne" style="background-color:green;">
         <h3>Add Pokemon To Save</h3>
       </button>
     </h2>
-    <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne">
+    <div style="background-color:lightgreen;" id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne">
       <div class="accordion-body">
-        <form action="{{ url_for('pokemon.add_pokemon')}}" method="post">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-          {% for player in save.players %}
-            <input name="{{ player.number }}" list="pokedex" class="form-control" placeholder="{{ player.name }}'s new pokemon" autocomplete="off" tabindex="1" style="max-width:300px">
-          {% endfor %}
-          {% if save.route_tracking %}
-            <select class="form-select" name="route" id="RouteSelect" tabindex="2" aria-label="Default select example">
-              <option disabled selected>Select Route...</option>
-              {% include 'route_list.html' %}
-            </select>
-          {% endif %}
-          <div class="input-group-append">
-            <button class="btn btn-secondary" tabindex="3">Add Pokemon</button>
+        <div class="row">
+          <div class="col-lg-6">
+            <form action="{{ url_for('pokemon.add_pokemon')}}" method="post">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+              {% for player in save.players %}
+                <input name="{{ player.player_number }}" list="pokedex" class="form-control" placeholder="{{ player.player_name }}'s new pokemon" autocomplete="off" tabindex="1" style="max-width:300px">
+              {% endfor %}
+              {% if save.route_tracking %}
+                <select class="form-select" name="route" id="RouteSelect" tabindex="2" aria-label="Default select example">
+                  <option disabled selected>Select Route...</option>
+                  {% include 'route_list.html' %}
+                </select>
+              {% endif %}
+              <div class="input-group-append">
+                <button class="btn btn-secondary" tabindex="3">Add Pokemon</button>
+              </div>
+            </form>
+            <form action="{{ url_for('pokemon.add_random') }}" method="post">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+              <button class="btn btn-primary" tabindex="3">Add Random Pokemon</button>
+            </form>
           </div>
-        </form>
-        <form action="{{ url_for('pokemon.add_random') }}" method="post">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-          <button class="btn btn-primary" tabindex="3">Add Random Pokemon</button>
-        </form>
+        </div>
       </div>
     </div>
   </div>
   <!-- Fusion Pokemon Section -->
   <div class="accordion-item">
     <h2 class="accordion-header" id="headingTwo">
-      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+      <button style="background-color:green;" class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
         <h3>Fuse Pokemon</h3>
       </button>
     </h2>
-    <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo">
+    <div style="background-color:lightgreen;" id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo">
       <div class="accordion-body">
         <form action="{{ url_for('pokemon.fuse_pokemon')}}" method="post">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
           {% for player in save.players %}
             <div>
-              <h3>{{ player.name }}</h3>
+              <h3>{{ player.player_name }}</h3>
               {% for part in ["Head", "Body"] %}
-                <select class="form-select" aria-label="Default select example" name="{{ part }}_{{ player.number }}" id="fuse_{{ part }}" onchange="fuse_options()">
+                <select class="form-select" aria-label="Default select example" name="{{ part }}_{{ player.player_number }}" id="fuse_{{ part }}" onchange="fuse_options()">
                   <option selected disabled>Fusion: {{ part }}</option>
-                  {% for pokemon in player.pokemons %}
-                    {% if not pokemon.info.head %}
-                      <option value="{{ pokemon.link_id }}">{{ pokemon.info.species }}</option>
+                  {% for pokemon in player.pokemon_caught %}
+                    {% if not pokemon.pokedex_info.head_pokemon %}
+                      <option value="{{ pokemon.id }}">{{ pokemon.pokedex_info.species }}</option>
                     {% endif %}
                   {% endfor %}
                 </select>
@@ -78,100 +87,98 @@
   <!-- Party Section -->
   <div class="accordion-item">
     <h2 class="accordion-header" id="headingThree">
-      <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+      <button style="background-color:green;" class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
         <h3>Party</h3>
       </button>
     </h2>
-    <div id="collapseThree" class="accordion-collapse collapse show" aria-labelledby="headingThree">
+    <div style="background-color:lightgreen;" id="collapseThree" class="accordion-collapse collapse show" aria-labelledby="headingThree">
       <div class="accordion-body container-fluid">
         <div class="row">
           {% for player in save.players %}
           <div class="col-lg-{{ column_widths['player_column'] }}">
-            <h2 style="text-align:center">{{ player.name }}</h2>
-            {% for mon in player.pokemons|sort(attribute='link_id')|sort(reverse=true, attribute='linked') if mon.position == "party" %}
+            <h2 style="text-align:center">{{ player.player_name }}</h2>
+            {% for pokemon in player.pokemon_caught if pokemon.position == "party" %}
               <div class="row shadow p-1 mb-1 bg-body-tertiary">
                 <!-- Pokemon Name and Typing -->
-                <h4 style="text-align: center; margin-bottom: 0px;">
-                    {{ mon.info.species }}
-                    {% if mon.info.body %}
-                    - ({{ mon.info.head.species }} + {{ mon.info.body.species }})
+                <h4 style="text-align: center; margin-bottom: 0px; background-color: lightblue;">
+                    {{ pokemon.pokedex_info.species }}
+                    {% if pokemon.pokedex_info.body_pokemon %}
+                    - ({{ pokemon.pokedex_info.head_pokemon.species }} + {{ pokemon.pokedex_info.body_pokemon.species }})
                     {% endif %}
                 </h4>
-                <h5 style="text-align: center; margin-bottom: 10px;">
-                  {{ mon.info.type_primary }}
-                    {% if mon.info.type_secondary %}
-                      / {{ mon.info.type_secondary }}
+                <h5 style="text-align: center; margin-bottom: 10px; background-color: lightblue;">
+                  {{ pokemon.pokedex_info.type_primary }}
+                    {% if pokemon.pokedex_info.type_secondary %}
+                      / {{ pokemon.pokedex_info.type_secondary }}
                     {% endif %}
                 </h5>
                 <!-- Pokemon Forms and Sprite -->
-                <div class="row align-items-center">
                   <!-- Pokemon Forms Side -->
-                  <div class="col-md-6">
-                    <!-- Evolution -->
-                    <form action="{{ url_for('pokemon.evolve_pokemon', player_num=player.number, link_id=mon.link_id) }}" method="post" style="margin-bottom:8px;">
-                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                      <div class="input-group mb-1">
-                        <select class="form-select" id="inputGroupSelect03" aria-label="Example select with button addon" name="evolve_{{ player.number }}_{{ mon.link_id }}">
-                          <option selected disabled>Evolve to...</option>
-                          {% for evo in mon.info.evolutions() %}
-                            {% if evo.number != mon.info.number %}
-                              <option value="{{ evo.number }}">{{ evo.split_names() }}</option>
-                            {% endif %}
-                          {% endfor %}
-                        </select>
-                        <button class="btn btn-secondary" type="submit">Evolve</button>
-                      </div>
-                    </form> 
-                    <!-- Send to Box -->
-                    <form action="{{ url_for('pokemon.switch_box', link_id=mon.link_id) }}" method="post" style="margin-bottom:8px;">
-                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                      <div class="input-group mb-1">
-                        <select class="form-select" id="inputGroupSelect03" aria-label="Example select with button addon" name="switch_with">
-                          <option selected disabled>Switch with Box...</option>
-                          <option value="addbox">Send to Box</option>
-                          {% for pokemon in player.pokemons %}
-                            {% if pokemon.position == "box" %}
-                              <option value="{{ pokemon.link_id }}">{{ pokemon.info.species }}</option>
-                            {% endif %}
-                          {% endfor %}
-                        </select>
-                        <button class="btn btn-secondary" type="submit">Send</button>
-                      </div>
-                    </form>
-                    <!-- Change Variant -->
-                    <form action="{{ url_for('pokemon.change_variant', player_num=player.number, link_id=mon.link_id) }}" method="post" style="margin-bottom:8px">
-                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                      <div class="input-group mb-1">
-                        <select class="form-select" id="inputGroupSelect03" aria-label="Example select with button addon" name="variant_select">
-                          <option selected disabled>Sprite Variants</option>
-                          {% for sprite in mon.info.sprites %}
-                            {% if sprite.variant_let == '' %}
-                              <option value="default">Default</option>
-                            {% else %}
-                              <option value="{{ sprite.variant_let }}">{{ sprite.variant_let.upper() }}</option>
-                            {% endif %}
-                          {% endfor %}
-                        </select>
-                        <button class="btn btn-secondary" type="submit">Switch</button>
-                      </div>
-                    </form>
-                    {% if save.ruleset == 1 %}
-                      <div><!-- Link -->
-                        {% if mon.linked %} 
-                          <form action="{{ url_for('pokemon.unlink_pokemon', player_num=player.number, link_id=mon.link_id) }}" method="post">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                            <button type="submit">Unlink</button>
-                          </form>
-                        {% else %}
-                        <form action="{{ url_for('pokemon.link_pokemon', link_id_1=mon.link_id) }}" method="post">
+                <div class="col-md-6" style="background-color: lightblue;">
+                  <!-- Evolution -->
+                  <form action="{{ url_for('pokemon.evolve_pokemon', id=pokemon.id) }}" method="post" style="margin-bottom:8px;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <div class="input-group mb-1">
+                      <select class="form-select" id="inputGroupSelect03" aria-label="Example select with button addon" name="evolve">
+                        <option selected disabled>Evolve to...</option>
+                        {% for evo in pokemon.pokedex_info.evolutions() %}
+                          {% if evo != pokemon.pokedex_info %}
+                            <option value="{{ evo.pokedex_number }}">{{ evo.split_names() }}</option>
+                          {% endif %}
+                        {% endfor %}
+                      </select>
+                      <button class="btn btn-secondary" type="submit">Evolve</button>
+                    </div>
+                  </form> 
+                  <!-- Send to Box -->
+                  <form action="{{ url_for('pokemon.switch_box', id=pokemon.id) }}" method="post" style="margin-bottom:8px;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <div class="input-group mb-1">
+                      <select class="form-select" id="inputGroupSelect03" aria-label="Example select with button addon" name="switch_with">
+                        <option value="sendbox">Send to Box</option>
+                        {% for box_pokemon in player.pokemon_caught %}
+                          {% if box_pokemon.position == "box" %}
+                            <option value="{{ box_pokemon.id }}">{{ box_pokemon.pokedex_info.species }}</option>
+                          {% endif %}
+                        {% endfor %}
+                      </select>
+                      <button class="btn btn-secondary" type="submit">Switch Out</button>
+                    </div>
+                  </form>
+                  <!-- Change Variant -->
+                  <form action="{{ url_for('pokemon.change_variant', id=pokemon.id) }}" method="post" style="margin-bottom:8px">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <div class="input-group mb-1">
+                      <select class="form-select" id="inputGroupSelect03" aria-label="Example select with button addon" name="variant_select">
+                        <option selected disabled>Sprite Variants</option>
+                        {% for sprite in pokemon.pokedex_info.sprites %}
+                          {% if sprite.variant_let == '' %}
+                            <option value="default">Default</option>
+                          {% else %}
+                            <option value="{{ sprite.variant_let }}">{{ sprite.variant_let.upper() }}</option>
+                          {% endif %}
+                        {% endfor %}
+                      </select>
+                      <button class="btn btn-secondary" type="submit">Switch</button>
+                    </div>
+                  </form>
+                  {% if save.ruleset == 1 %}
+                    <div><!-- Link -->
+                      {% if pokemon.soul_linked %} 
+                        <form action="{{ url_for('pokemon.unlink_pokemon', id=pokemon.id) }}" method="post">
+                          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                          <button type="submit">Unlink</button>
+                        </form>
+                      {% else %}
+                        <form action="{{ url_for('pokemon.link_pokemon', id=pokemon.id) }}" method="post">
                           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                           <select name="link_with">
                             <option selected disabled>Link with ...</option>
-                            {% for other_players in save.players %}
-                              {% if other_players.id != player.id %}
-                                {% for other_pokemon in other_players.pokemon %}
-                                  {% if other_pokemon.link_id != mon.link_id %}
-                                    <option value="{{ other_pokemon.link_id }}">{{ other_pokemon.info.species }}</option>
+                            {% for other_player in save.players %}
+                              {% if other_player != player %}
+                                {% for other_pokemon in other_player.pokemon_caught %}
+                                  {% if other_pokemon.soul_linked != pokemon.soul_linked %}
+                                    <option value="{{ other_pokemon.id }}">{{ other_pokemon.pokedex_info.species }}</option>
                                   {% endif %}
                                 {% endfor %}
                               {% endif %}
@@ -179,40 +186,40 @@
                           </select>
                           <button type="submit">Link</button>
                         </form>
-                        {% endif %}
-                      </div>
-                    {% endif %}
-                    <!-- Oops -->
-                    <form action="{{ url_for('pokemon.switch_dead', link_id=mon.link_id) }}" method="post" style="display: inline-block;">
+                      {% endif %}
+                    </div>
+                  {% endif %}
+                  <!-- Oops -->
+                  <form action="{{ url_for('pokemon.switch_dead', id=pokemon.id) }}" method="post" style="display: inline-block;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <button type="button submit" class="btn btn-danger">Faint</button>
+                  </form>
+                  {% if not pokemon.pokedex_info.body_pokemon %}
+                    <!-- Preview Fusions -->
+                    <form action="{{ url_for('main.preview_fusions', id=pokemon.id) }}" method="post" style="display: inline-block;">
                       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                      <button type="button submit" class="btn btn-danger">Faint</button>
+                      <button type="button submit" class="btn btn-info">Preview Fusions</button>
                     </form>
-                    {% if not mon.info.body %}
-                      <!-- Preview Fusions -->
-                      <form action="{{ url_for('main.preview_fusions', player_num=player.number, link_id=mon.link_id) }}" method="post" style="display: inline-block;">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                        <button type="button submit" class="btn btn-info">Preview Fusions</button>
-                      </form>
-                    {% else %}
-                      <!-- Swap Fusion -->
-                      <form action="{{ url_for('pokemon.swap_fusion', player_num=player.number, link_id=mon.link_id) }}" method="post" style="display: inline-block;">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                        <button type="button submit" class="btn btn-primary">Swap Fusion</button>
-                      </form>
-                    {% endif %}
-                  </div>
-                  <!-- Variant Form and Sprite Info -->
-                  <div class="col-md-6">
-                    {% if not mon.sprite %}
-                      <div><img class="mx-auto d-block" src="{{ url_for('main.static', filename='images/sprites/' ~ mon.info.head.number ~ '/' ~ mon.info.number ~ '.png') }}" onerror="this.onerror=null; this.src='/main/static/images/sprites/default/default.png'" width="150" height="150"></div>
-                      artists: japeal
-                    {% else %}
-                      <div><img class="mx-auto d-block" src="{{ url_for('main.static', filename='images/sprites/' ~ mon.sprite.sprite_group() ~ '/' ~ mon.sprite.sprite_code() ~ '.png') }}" onerror="this.onerror=null; this.src='/main/static/images/sprites/default/default.png'" width="150" height="150"></div>
-                      artist: {{ mon.sprite.artists.name }}
-                    {% endif %}
-                  </div>
+                  {% else %}
+                    <!-- Swap Fusion -->
+                    <form action="{{ url_for('pokemon.swap_fusion', id=pokemon.id) }}" method="post" style="display: inline-block;">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                      <button type="button submit" class="btn btn-primary">Swap Fusion</button>
+                    </form>
+                  {% endif %}
                 </div>
-                <a style="text-align: center;" target="_blank" rel="noopener noreferrer" href="https://if.daena.me/{{ mon.info.number }}/">More info on FusionDex</a>
+                <!-- Variant Form and Sprite Info -->
+                <div class="col-md-6" style="background-color:lightblue;">
+                  {% if not pokemon.sprite %}
+                    <div><img class="mx-auto d-block" src="{{ url_for('main.static', filename='images/sprites/' ~ pokemon.pokedex_info.head_pokemon.pokedex_number ~ '/' ~ pokemon.pokedex_info.pokedex_number ~ '.png') }}" onerror="this.onerror=null; this.src='/main/static/images/sprites/default/default.png'" width="150" height="150"></div>
+                    artists: japeal
+                  {% else %}
+                    <div><img class="mx-auto d-block" src="{{ url_for('main.static', filename='images/sprites/' ~ pokemon.sprite.sprite_group() ~ '/' ~ pokemon.sprite.sprite_code() ~ '.png') }}" onerror="this.onerror=null; this.src='/main/static/images/sprites/default/default.png'" width="150" height="150"></div>
+                    artist: {{ pokemon.sprite.artists.name }}
+                  {% endif %}
+                </div>
+
+                <a style="text-align: center; background-color:lightblue;" target="_blank" rel="noopener noreferrer" href="https://if.daena.me/{{ pokemon.pokedex_info.pokedex_number }}/">More info on FusionDex</a>
               </div>
             {% endfor %}  
           </div>
@@ -224,43 +231,43 @@
   <!-- Box Section -->
   <div class="accordion-item">
     <h2 class="accordion-header" id="headingFour">
-      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
+      <button style="background-color:green;" class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
         <h3>Box</h3>
       </button>
     </h2>
-    <div id="collapseFour" class="accordion-collapse collapse show" aria-labelledby="headingFour">
+    <div style="background-color:lightgreen;" id="collapseFour" class="accordion-collapse collapse show" aria-labelledby="headingFour">
       <div class="accordion-body container-fluid">
         <div class="row">
           {% for player in save.players %}
             <div class="col-md-{{ column_widths['player_column'] }}">
-              <h2 style="text-align:center">{{ player.name }}</h2>
-              {% for mon in player.pokemons|sort(attribute='link_id')|sort(reverse=true, attribute='linked') %}
-                {% if mon.position == "box" %}
-                  <div class="row shadow p-1 mb-1 bg-body-tertiary">
+              <h2 style="text-align:center">{{ player.player_name }}</h2>
+              {% for pokemon in player.pokemon_caught %}
+                {% if pokemon.position == "box" %}
+                  <div class="row shadow p-1 mb-1 bg-body-tertiary" style="background-color:lightblue;">
                     <!-- Pokemon Name and Typing -->
-                    <h4 style="text-align: center; margin-bottom: 0px;">
-                      {{ mon.info.species }}
-                        {% if mon.info.body %}
-                        - ({{ mon.info.head.species }} + {{ mon.info.body.species }})
+                    <h4 style="text-align: center; margin-bottom: 0px; background-color:lightblue;">
+                      {{ pokemon.pokedex_info.species }}
+                        {% if pokemon.pokedex_info.body_pokemon %}
+                        - ({{ pokemon.pokedex_info.head_pokemon.species }} + {{ pokemon.pokedex_info.body_pokemon.species }})
                         {% endif %}
                     </h4>
-                    <h5 style="text-align: center; margin-bottom: 10px;">
-                      {{ mon.info.type_primary }}
-                        {% if mon.info.type_secondary %}
-                          / {{ mon.info.type_secondary }}
+                    <h5 style="text-align: center; margin-bottom: 10px; background-color:lightblue;">
+                      {{ pokemon.pokedex_info.type_primary }}
+                        {% if pokemon.pokedex_info.type_secondary %}
+                          / {{ pokemon.pokedex_info.type_secondary }}
                         {% endif %}
                     </h5>
                     <!-- Left Side -->
-                    <div class="col-md-6">
+                    <div style="background-color:lightblue;" class="col-md-6">
                       <!-- Evolution -->
-                      <form action="{{ url_for('pokemon.evolve_pokemon', player_num=player.number, link_id=mon.link_id) }}" method="post" style="margin-bottom:8px;">
+                      <form action="{{ url_for('pokemon.evolve_pokemon', id=pokemon.id) }}" method="post" style="margin-bottom:8px;">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <div class="input-group mb-1">
-                          <select class="form-select" id="inputGroupSelect03" aria-label="Example select with button addon" name="evolve_{{ player.number }}_{{ mon.link_id }}">
+                          <select class="form-select" id="inputGroupSelect03" aria-label="Example select with button addon" name="evolve">
                             <option selected disabled>Evolve to...</option>
-                            {% for evo in mon.info.evolutions() %}
-                              {% if evo.number != mon.info.number %}
-                                <option value="{{ evo.number }}">{{ evo.split_names() }}</option>
+                            {% for evo in pokemon.pokedex_info.evolutions() %}
+                              {% if evo.pokedex_number != pokemon.pokedex_info.pokedex_number %}
+                                <option value="{{ evo.pokedex_number }}">{{ evo.split_names() }}</option>
                               {% endif %}
                             {% endfor %}
                           </select>
@@ -268,30 +275,29 @@
                         </div>
                       </form> 
                       <!-- Add to Party -->
-                      <form action="{{ url_for('pokemon.switch_party', link_id=mon.link_id) }}" method="post" style="margin-bottom:8px;">
+                      <form action="{{ url_for('pokemon.switch_party', id=pokemon.id) }}" method="post" style="margin-bottom:8px;">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <div class="input-group mb-1">
                           <select class="form-select" id="inputGroupSelect03" aria-label="Example select with button addon" name="switch_with">
-                            <option selected disabled>Switch with Party...</option>
-                            {% if party_length < 6 %}
+                            {% if player.party_length() < 6 %}
                               <option value="addparty">Add to Party</option>
                             {% endif %}
-                            {% for pokemon in player.pokemons %}
-                              {% if pokemon.position == "party" %}
-                                <option value="{{ pokemon.link_id }}">{{ pokemon.info.species }}</option>
+                            {% for party_pokemon in player.pokemon_caught %}
+                              {% if party_pokemon.position == "party" %}
+                                <option value="{{ party_pokemon.id }}">{{ party_pokemon.pokedex_info.species }}</option>
                               {% endif %}
                             {% endfor %}
                           </select>
-                          <button class="btn btn-secondary" type="submit">To Party</button>
+                          <button class="btn btn-secondary" type="submit">Switch In</button>
                         </div>
                       </form>
                       <!-- Change Variant -->
-                      <form action="{{ url_for('pokemon.change_variant', player_num=player.number, link_id=mon.link_id) }}" method="post" style="margin-bottom:8px">
+                      <form action="{{ url_for('pokemon.change_variant', id=pokemon.id) }}" method="post" style="margin-bottom:8px">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <div class="input-group mb-1">
                           <select class="form-select" id="inputGroupSelect03" aria-label="Example select with button addon" name="variant_select">
                             <option selected disabled>Sprite Variants</option>
-                            {% for sprite in mon.info.sprites %}
+                            {% for sprite in pokemon.pokedex_info.sprites %}
                               {% if sprite.variant_let == '' %}
                                 <option value="default">Default</option>
                               {% else %}
@@ -303,22 +309,24 @@
                         </div>
                       </form><!-- Link -->
                       {% if save.ruleset == 1 %}
-                        {% if mon.linked %} 
-                          <form action="{{ url_for('pokemon.unlink_pokemon', player_num=player.number, link_id=mon.link_id) }}" method="post" style="display: inline-block;">
+                        {% if pokemon.soul_linked %} 
+                          <form action="{{ url_for('pokemon.unlink_pokemon', id=pokemon.id) }}" method="post" style="display: inline-block;">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                             <button type="button submit" class="btn btn-secondary">Unlink</button>
                           </form>
                         {% else %}
-                          <form action="{{ url_for('pokemon.link_pokemon', link_id_1=mon.link_id) }}" method="post">
+                          <form action="{{ url_for('pokemon.link_pokemon', id=pokemon.id) }}" method="post">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                             <div class="input-group mb-1">
                               <select class="form-select" id="inputGroupSelect03" aria-label="Example select with button addon" name="link_with">
                                 <option selected disabled>Link with ...</option>
                                 {% for other_player in save.players %}
                                   {% if other_player != player %}
-                                    {% for other_pokemon in other_player.pokemons %}
-                                      {% if other_pokemon.link_id != mon.link_id and other_pokemon.position != 'dead' %}
-                                        <option value="{{ other_pokemon.link_id }}">{{ other_pokemon.info.species }} ({{ other_pokemon.player.name }})</option>
+                                    {% for other_pokemon in other_player.pokemon_caught %}
+                                      {% if not other_pokemon.soul_linked %}
+                                        <option value="{{ other_pokemon.id }}">{{ other_pokemon.pokedex_info.species }} ({{ other_pokemon.player_info.player_name }})</option>
+                                      {% elif not player in other_pokemon.soul_linked.linked_players() %}
+                                        <option value="{{ other_pokemon.id }}">{{ other_pokemon.pokedex_info.species }} ({{ other_pokemon.player_info.player_name }})</option>
                                       {% endif %}
                                     {% endfor %}
                                   {% endif %}
@@ -330,19 +338,19 @@
                         {% endif %}
                       {% endif %}
                       <!-- Oops -->
-                      <form action="{{ url_for('pokemon.switch_dead', link_id=mon.link_id) }}" method="post" style="display: inline-block;">
+                      <form action="{{ url_for('pokemon.switch_dead', id=pokemon.id) }}" method="post" style="display: inline-block;">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <button type="button submit" class="btn btn-danger">Faint</button>
                       </form>
-                      {% if not mon.info.body %}
+                      {% if not pokemon.pokedex_info.body_pokemon %}
                         <!-- Preview Fusions -->
-                        <form action="{{ url_for('main.preview_fusions', player_num=player.number, link_id=mon.link_id) }}" method="post" style="display: inline-block;">
+                        <form action="{{ url_for('main.preview_fusions', id=pokemon.id) }}" method="post" style="display: inline-block;">
                           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                           <button type="button submit" class="btn btn-info">Preview Fusions</button>
                         </form>
                       {% else %}
                         <!-- Swap Fusion -->
-                        <form action="{{ url_for('pokemon.swap_fusion', player_num=player.number, link_id=mon.link_id) }}" method="post" style="display: inline-block;">
+                        <form action="{{ url_for('pokemon.swap_fusion', id=pokemon.id) }}" method="post" style="display: inline-block;">
                           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                           <button type="button submit" class="btn btn-primary">Swap Fusion</button>
                         </form>
@@ -350,16 +358,16 @@
                     </div>
                     <!-- Right Side -->
                     <!-- Sprite -->
-                    <div class="col-md-6">
-                      {% if not mon.sprite %}
-                        <div><img class="mx-auto d-block" src="{{ url_for('main.static', filename='images/sprites/' ~ mon.info.head.number ~ '/' ~ mon.info.number ~ '.png') }}" onerror="this.onerror=null; this.src='/main/static/images/sprites/default/default.png'" width="150" height="150"></div>
+                    <div style="background-color:lightblue;" class="col-md-6">
+                      {% if not pokemon.sprite %}
+                        <div><img class="mx-auto d-block" src="{{ url_for('main.static', filename='images/sprites/' ~ pokemon.pokedex_info.head_pokemon.pokedex_number ~ '/' ~ pokemon.pokedex_info.number ~ '.png') }}" onerror="this.onerror=null; this.src='/main/static/images/sprites/default/default.png'" width="150" height="150"></div>
                         artists: japeal
                       {% else %}
-                        <div><img class="mx-auto d-block" src="{{ url_for('main.static', filename='images/sprites/' ~ mon.sprite.sprite_group() ~ '/' ~ mon.sprite.sprite_code() ~ '.png') }}" onerror="this.onerror=null; this.src='/main/static/images/sprites/default/default.png'" width="150" height="150"></div>
-                        artist: {{ mon.sprite.artists.name }}
+                        <div><img class="mx-auto d-block" src="{{ url_for('main.static', filename='images/sprites/' ~ pokemon.sprite.sprite_group() ~ '/' ~ pokemon.sprite.sprite_code() ~ '.png') }}" onerror="this.onerror=null; this.src='/main/static/images/sprites/default/default.png'" width="150" height="150"></div>
+                        artist: {{ pokemon.sprite.artists.name }}
                       {% endif %}
                     </div>
-                    <a style="text-align: center;" target ="_blank" rel="noopener noreferrer" href="https://if.daena.me/{{ mon.info.number }}/">More info on FusionDex</a>
+                    <a style="text-align: center; background-color:lightblue;" target ="_blank" rel="noopener noreferrer" href="https://if.daena.me/{{ pokemon.pokedex_info.number }}/">More info on FusionDex</a>
                   </div>
                 {% endif %}
               {% endfor %}  
@@ -372,41 +380,41 @@
   <!-- Graveyard Section -->
   <div class="accordion-item">
     <h2 class="accordion-header" id="headingFive">
-      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFive" aria-expanded="false" aria-controls="collapseFive">
+      <button style="background-color:green;" class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFive" aria-expanded="false" aria-controls="collapseFive">
         <h3>Graveyard</h3>
       </button>
     </h2>
-    <div id="collapseFive" class="accordion-collapse collapse" aria-labelledby="headingFive">
+    <div style="background-color:lightgreen;" id="collapseFive" class="accordion-collapse collapse" aria-labelledby="headingFive">
       <div class="accordion-body container-fluid">
         <div class="row shadow p-1 mb-1 bg-body-tertiary">
           {% for player in save.players %}
-            <div class="col-lg-{{ column_widths['player_column'] }}">
-              <h2 style="text-align:center">{{ player.name }}</h2>
-              {% for mon in player.pokemons %}
-                {% if mon.position == "dead" %}
+            <div class="col-lg-{{ column_widths['player_column'] }}" style="background-color: lightgreen;">
+              <h2 style="text-align:center">{{ player.player_name }}</h2>
+              {% for pokemon in player.pokemon_caught %}
+                {% if pokemon.position == "dead" %}
                   <div class="row">
                     <h4 style="text-align: center;">
-                      {{ mon.info.species }}
-                        {% if mon.info.body %}
-                        - ({{ mon.info.head.species }} + {{ mon.info.body.species }})
+                      {{ pokemon.pokedex_info.species }}
+                        {% if pokemon.pokedex_info.body_pokemon %}
+                        - ({{ pokemon.pokedex_info.head_pokemon.species }} + {{ pokemon.pokedex_info.body_pokemon.species }})
                         {% endif %}
                     </h4>
                     <h5 style="text-align: center;">
-                      {{ mon.info.type_primary }}
-                        {% if mon.info.type_secondary %}
-                          / {{ mon.info.type_secondary }}
+                      {{ pokemon.pokedex_info.type_primary }}
+                        {% if pokemon.pokedex_info.type_secondary %}
+                          / {{ pokemon.pokedex_info.type_secondary }}
                         {% endif %}
                     </h5>
                     <!-- Left Side -->
                     <div class="col-md-6">
                       <!-- Revive -->
-                      <form action="{{ url_for('pokemon.switch_revive', link_id=mon.link_id) }}" method="post">
+                      <form action="{{ url_for('pokemon.switch_revive', id=pokemon.id) }}" method="post">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <button type="button submit" class="btn btn-success">Revive</button>
                       </form>
                       <!-- Delete -->
                       <div>
-                        <form action="{{ url_for('pokemon.delete_pokemon', link_id=mon.link_id) }}" method="post">
+                        <form action="{{ url_for('pokemon.delete_pokemon', id=pokemon.id) }}" method="post">
                           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                           <button type="submit submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this Pokemon from this save?')">Delete</button>
                         </form>
@@ -416,10 +424,10 @@
                     <!-- Sprite -->
                     <div class="col-md-6">
                       <div>
-                        <img class="mx-auto d-block" src="{{ url_for('main.static', filename='images/sprites/' ~ mon.info.base_id_1 ~ '/' ~ mon.sprite ~ '.nosprite') }}" onerror="this.onerror=null; this.src='/main/static/images/sprites/default/default.png'" width="150" height="150">
+                        <img class="mx-auto d-block" src="{{ url_for('main.static', filename='images/sprites/' ~ pokemon.pokedex_info.base_id_1 ~ '/' ~ pokemon.sprite ~ '.nosprite') }}" onerror="this.onerror=null; this.src='/main/static/images/sprites/default/default.png'" width="150" height="150">
                       </div>
                       <!-- <div>
-                        artist: {{ mon.sprite.artists }}
+                        artist: {{ pokemon.sprite.artists }}
                       </div> -->
                     </div>
                   </div>

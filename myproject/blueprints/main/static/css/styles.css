@@ -78,3 +78,10 @@
     color:yellow
 }
 
+.sticky {
+    position: sticky;
+    top: 20px;
+    background-color: red;
+    color: white;
+    padding: 10px;
+}

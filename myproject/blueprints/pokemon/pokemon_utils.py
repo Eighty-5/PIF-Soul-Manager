@@ -1,9 +1,38 @@
 from ...extensions import db
-from flask import flash, request
-from ...models import Player, Pokedex, Pokemon, Save
+from flask import flash, request, redirect, url_for
+from ...models import Player, Pokedex, Pokemon, Save, SoulLink
 
-def add_pokemon_per_ruleset_group(ruleset_group, player_num, species, link_id, route, current_save):
-    player = db.session.scalar(db.select(Player).where(Player.saves==current_save, Player.number==player_num))
+
+def pokemon_verification(pokemon_id, save_file):
+    pokemon_to_check = db.session.get(Pokemon, pokemon_id)
+    if not pokemon_to_check or pokemon_to_check.player_info.save_info != save_file:
+        return False
+    else:
+        return pokemon_to_check
+
+# def pokemon_verification(pokemon_ids_to_verify, save_file):
+#     for pokemon in pokemon_ids_to_verify:
+#         pokemon_to_verify = db.session.get(Pokemon, pokemon)
+#         if not pokemon_to_verify or pokemon_to_verify.player_info.save_info != save_file:
+#             return False
+#         else:
+#             pokemon = pokemon_to_verify
+#     return pokemon_ids_to_verify
+
+
+def pokemon_check(pokemon_to_check, save_file):
+    if not pokemon_to_check.player_info.save_info == save_file:
+        flash("Not a valid pokemon")
+        return False
+
+
+def add_pokemon_per_ruleset_group(ruleset_group, player_num, species, linkage, route, current_save):
+
+    if ruleset == 2:
+        linkage = SoulLink(soul_link_number=get_new_link_number(current_save))
+    print(current_save)
+    player = db.session.scalar(db.select(Player).where(Player.save_info==current_save, Player.player_number==player_num))
+    print(player)
     if ruleset_group == 'manual':
         linked = False
     elif ruleset_group == 'auto':
@@ -12,36 +41,49 @@ def add_pokemon_per_ruleset_group(ruleset_group, player_num, species, link_id, r
         linked, link_id = False, get_new_link_id(current_save.id)
     else:
         return 'ERROR'
-    pokedex_entry = db.session.scalar(db.select(Pokedex).where(Pokedex.species==species, Pokedex.head==None))
-    pokemon_to_add = Pokemon(link_id=link_id,
-                             linked=linked,
-                             route=route,
-                             position='box',
-                             player=player,
-                             info=pokedex_entry)
+    pokedex_entry = db.session.scalar(db.select(Pokedex).where(Pokedex.species==species, Pokedex.head_pokemon==None))
+    print(pokedex_entry)
+    pokemon_to_add = Pokemon(player_info=player,
+                             pokedex_info=pokedex_entry,
+                             route_caught=route,
+                             soul_linked=linkage,
+                             position='box')
     pokemon_to_add.set_default_sprite()
     db.session.add(pokemon_to_add)
 
 
-def create_fusion_pokemon(new_link_id, head_link_ids, body_link_ids, current_save):
-    for head_link_id, body_link_id, player in zip(head_link_ids, body_link_ids, current_save.players):
-        if current_save.ruleset == 1:
-            new_link_id == get_new_link_id(current_save.id)
-        head_pokemon = db.session.scalar(db.select(Pokemon).where(Pokemon.player==player, Pokemon.link_id==head_link_id))
-        body_pokemon = db.session.scalar(db.select(Pokemon).where(Pokemon.player==player, Pokemon.link_id==body_link_id))
-        fused_pokemon = db.session.scalar(db.select(Pokedex).where(Pokedex.head==head_pokemon.info, Pokedex.body==body_pokemon.info))
-        pokemon_to_add = Pokemon(
-            link_id = new_link_id,
-            linked=True,
-            position='box',
-            player=player,
-            info=fused_pokemon,
-            sprite=fused_pokemon.sprites[0])
-        db.session.add(pokemon_to_add)
-        db.session.delete(head_pokemon)
-        db.session.delete(body_pokemon)
-    flash("Pokemon fused successfully")
-    db.session.commit()
+# def create_fusion_pokemon(new_link_id, head_link_ids, body_link_ids, current_save):
+#     for head_link_id, body_link_id, player in zip(head_link_ids, body_link_ids, current_save.players):
+#         if current_save.ruleset == 1:
+#             new_link_id == get_new_link_id(current_save.id)
+#         head_pokemon = db.session.scalar(db.select(Pokemon).where(Pokemon.player==player, Pokemon.link_id==head_link_id))
+#         body_pokemon = db.session.scalar(db.select(Pokemon).where(Pokemon.player==player, Pokemon.link_id==body_link_id))
+#         fused_pokemon = db.session.scalar(db.select(Pokedex).where(Pokedex.head==head_pokemon.info, Pokedex.body==body_pokemon.info))
+#         pokemon_to_add = Pokemon(
+#             link_id = new_link_id,
+#             linked=True,
+#             position='box',
+#             player=player,
+#             info=fused_pokemon,
+#             sprite=fused_pokemon.sprites[0])
+#         db.session.add(pokemon_to_add)
+#         db.session.delete(head_pokemon)
+#         db.session.delete(body_pokemon)
+#     flash("Pokemon fused successfully")
+#     db.session.commit()
+
+
+def create_fusion_pokemon(linkage, head_pokemon, body_pokemon, current_save):
+    fused_pokedex_info = db.session.scalar(db.select(Pokedex).where(Pokedex.head_pokemon==head_pokemon.pokedex_info, Pokedex.body_pokemon==body_pokemon.pokedex_info))
+    pokemon_to_add = Pokemon(
+        position = "box",
+        player_info = head_pokemon.player_info,
+        pokedex_info = fused_pokedex_info,
+        soul_linked = linkage
+    )
+    db.session.add(pokemon_to_add)
+    db.session.delete(head_pokemon)
+    db.session.delete(body_pokemon)
 
 
 def dex_check(dex_num):
@@ -63,10 +105,26 @@ def fusion_check(heads, bodys):
     return True
 
 
+def get_new_link_number(current_save):
+    last_soul_link = db.session.scalar(
+        db.select(SoulLink).where(SoulLink.save_info==current_save).order_by(SoulLink.soul_link_number.desc())
+        )
+    if last_soul_link:
+        return last_soul_link.soul_link_number
+    else:
+        return 1
+    # last_pokemon = db.session.scalar(
+    #     db.select(Pokemon).join(Pokemon.player_info).join(Pokemon.soul_linked).where(
+    #         Player.save_info==current_save
+    #         )
+    #     )
+    # if last_pokemon:
+    #     return last_pokemon.soul_linked.soul_link_number
+
 def get_new_link_id(current_save):
-    last_pokemon = db.session.scalar(db.select(Pokemon).join(Pokemon.player).where(Player.saves==current_save).order_by(Pokemon.link_id.desc()))
+    last_pokemon = db.session.scalar(db.select(Pokemon).join(Pokemon.player_info).join(Pokemon.soul_linked).where(Player.save_info==current_save).order_by(SoulLink.soul_link_number.desc()))
     if last_pokemon:
-        return last_pokemon.link_id + 1
+        return last_pokemon.soul_linked.soul_link_number + 1
     else:
         return 1
 

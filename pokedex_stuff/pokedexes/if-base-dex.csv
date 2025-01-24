@@ -32,11 +32,11 @@ number,species,type_primary,type_secondary,name_1,name_2,family,family_order,hp,
 31,Nidoqueen,Poison,Ground,Nido,queen,29,3,90,92,87,75,85,76
 32,Nidoran M,Poison,,Nido,ran,32,1,46,57,40,40,40,50
 33,Nidorino,Poison,,Nido,rino,32,2,61,72,57,55,55,65
-34,Nidoking,Poison,Ground,Nido,king,32,3,81,102,77,85,75,85
+34,Nidokinger,Poison,Water,Nido,kinger,32,3,81,102,77,85,75,85
 35,Clefairy,Fairy,,Clef,fairy,173,2,70,45,48,60,65,35
 36,Clefable,Fairy,,Clef,fable,173,3,95,70,73,95,90,60
-37,Vulpix,Fire,,Vul,pix,37,1,38,41,40,50,65,65
-38,Ninetales,Fire,,Nine,tales,37,2,73,76,75,81,100,100
+37,Vulpix,Fire,Flying,Vul,pix,37,1,38,41,40,50,65,65
+38,Ninetales,Fire,Flying,Nine,tales,37,2,73,76,75,81,100,100
 39,Jigglypuff,Normal,Fairy,Jiggly,puff,174,2,115,45,20,45,25,20
 40,Wigglytuff,Normal,Fairy,Wiggly,tuff,174,3,140,70,45,85,50,45
 41,Zubat,Poison,Flying,Zu,bat,41,1,40,45,35,30,40,55
@@ -449,7 +449,6 @@ number,species,type_primary,type_secondary,name_1,name_2,family,family_order,hp,
 448,Regice,Ice,,Regi,ice,448,1,80,50,100,100,200,50
 449,Registeel,Steel,,Regi,steel,449,1,80,75,150,75,150,50
 450,Necrozma,Psychic,,Necro,zma,450,1,97,107,101,127,89,79
-450_1,Ultra Necrozma,Psychic,Dragon,Ultra Necro,zma,451,1,97,167,97,167,97,129
 451,Stufful,Normal,Fighting,Stuff,ful,452,1,70,75,50,45,50,50
 452,Bewear,Normal,Fighting,Be,wear,452,2,120,125,80,55,60,60
 453,Dhelmise,Ghost,Grass,Dhelm,helmise,454,1,70,131,100,86,90,40

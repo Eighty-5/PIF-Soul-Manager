@@ -49,11 +49,11 @@ def admin_players():
 @admin.route('/pokemon', methods=['GET', 'POST'])
 def admin_pokemon():
     pokemons = db.session.scalars(db.select(Pokemon).order_by(Pokemon.id))
-    return render_template('admin_pokemon.html', pokemon=pokemons)
+    return render_template('admin_pokemon.html', pokemons=pokemons)
 
 
 # Admin route for deleting pokemon and any pokemon linked to said pokemon
-@admin.route('/pokemon/delete/<int:mon_id>', methods=['POST'])
+@admin.route('/pokemon/delete/<int:pokemon_id>', methods=['POST'])
 @login_required
 def admin_delete_pokemon(mon_id):
     selection = db.session.scalar(db.select(Pokemon).where(Pokemon.id==mon_id))
