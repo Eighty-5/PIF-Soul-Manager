@@ -12,8 +12,8 @@
 <div>
   {% for save in saves %}
     <div class="shadow p-3 mb-5 bg-body-tertiary rounded">
-      <h2>Save {{ save.save_number }} / Ruleset {{ save.ruleset }}</h2>
-      <br>
+      <h2>Save {{ save.save_number }} / {{ save.save_name + ' / ' if save.save_name }} Ruleset {{ save.ruleset }}</h2>
+      <br> 
       {% for player in save.players %}
         <div class="shadow bg-body-tertiary rounded">
           <h4>{{ player.player_name }}'s Party</h4>

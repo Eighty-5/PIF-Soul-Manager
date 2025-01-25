@@ -3,6 +3,7 @@ import os
 import sys
 import shutil
 import subprocess
+from string import ascii_lowercase as alphabet
 
 from datetime import datetime
 from dotenv import load_dotenv
@@ -21,6 +22,7 @@ PASS_LST = ['450_1']
 BASE_DEX_CSV_PATH = 'pokedex_stuff/pokedexes/if-base-dex-new.csv'
 SPRITES_CREDITS_PATH = 'pokedex_stuff/sprite_credits/Sprite Credits.csv'
 ROUTES_LIST_PATH = 'pokedex_stuff/routes.csv'
+POKEDEX_HTML_PATH = 'myproject/blueprints/main/templates/pokemon_list.html'
 
 REMOVED_DEX_CSV_PATH = 'pokedex_stuff/pokedexes/removed-dex.csv'
 POKEDEX_UPDATES_PATH = 'pokedex_stuff/logs/pokedex_updates/'
@@ -236,7 +238,28 @@ def update_pokedex_test(initial_upload):
             create_fusion(pokemon_1, pokemon_2)
             create_fusion(pokemon_2, pokemon_1)
 
+    
+
+
     db.session.commit()
+
+
+    # Create pokedex list for adding pokemon
+    base_pokedex = db.session.scalars(db.select(Pokedex).where(Pokedex.head_pokemon==None))
+    
+    # Quick and Dirty sort change later
+    base_pokedex = {int(pokemon.pokedex_number):pokemon.species for pokemon in base_pokedex}
+    count = 1
+    pokedex_lst = []
+    while count <= len(base_pokedex):
+        pokedex_lst.append(base_pokedex[count])
+        count += 1
+
+    with open(POKEDEX_HTML_PATH, 'w') as pokedex_html_file:
+        pokedex_html_file.write('<datalist id="pokedex">\n')
+        for pokemon in pokedex_lst:
+            pokedex_html_file.write(f'  <option value="{pokemon}"></option>\n')
+        pokedex_html_file.write('</datalist>')
 
 @func_timer
 def update_pokedex(initial_upload):
@@ -509,11 +532,52 @@ def add_to_pokedex(pokedex_object):
     pass
 
 
+@func_timer
+def update_sprites_test(initial_upload):
+    artist_query = db.session.scalars(db.select(Artist))
+    artists = {artist.name: artist for artist in artist_query}
+    
+    artists_to_add = []
+    if not 'japeal' in artists:
+        artists_to_add.append(Artist(name='japeal'))
+    with open(SPRITES_CREDITS_PATH, newline='', errors='ignore') as sprites_file:
+        sprite_reader = csv.DictReader(sprites_file)
+        for row in sprite_reader:
+            artist_name = row['artist']
+            if not artist_name in artists:
+                artist = Artist(name=artist_name)
+                artists[artist_name] = artist
+                artists_to_add.append(artist)
+        db.session.add_all(artists_to_add)
+    print("New Artists Added")
+
+    pokedex_full = get_db_pokedex('full', 'pokedex_number')
+    sprites_full = db.session.scalars(db.select(Sprite))
+    sprites_dict = {sprite.sprite_code(): sprite for sprite in sprites_full}
+    sprites_to_add = []
+    artist_changes = []
+    new_sprites_dict = {}
+
+    with open(SPRITES_CREDITS_PATH, newline='', errors='ignore') as sprites_file:
+        sprite_reader = csv.DictReader(sprites_file)
+        for sprite in sprite_reader:
+            sprite_code = sprite['sprite']
+            artist = sprite['artist']
+            sprite_group, pokedex_number, variant = sanitized_sprite_code(sprite_code)
+            if sprite_group != None:
+                pass
+                
+
+
+
+
+
 def update_sprites(initial_upload):
     # sprites_full_t0 = time.perf_counter()
     print("Adding Sprites and their Artists. . .\n")
     # artist_additions_t0 = time.perf_counter()
-    artist_query = db.session.execute(db.select(Artist)).scalars()
+    artist_query = db.session.scalars(db.select(Artist))
+    # artist_query = db.session.execute(db.select(Artist)).scalars()
     artists = {artist.name: artist for artist in artist_query}
     artists_to_add = []
     if not 'japeal' in artists:
@@ -533,11 +597,12 @@ def update_sprites(initial_upload):
     # get_lists_t0 = time.perf_counter()
     pokedex_full = get_db_pokedex('full', 'pokedex_number')
     pokedex_full_pokedex_numbers = {pokedex_number:'' for pokedex_number in pokedex_full}
-    sprites_full = db.session.execute(db.select(Sprite)).scalars()
+    sprites_full = db.session.scalars(db.select(Sprite))
     sprites_dict = {sprite.sprite_code(): sprite for sprite in sprites_full}
     sprites_to_delete = sprites_dict.copy()
     sprites_to_add = []
     artist_changes = []
+    new_sprites_dict = {}
     # get_lists_t1 = time.perf_counter()
 
     with open(SPRITES_CREDITS_PATH, newline='', errors='ignore') as sprites_file:
@@ -656,7 +721,7 @@ def upload_sprites() -> None:
     confirm_sprite_additions = input("ADD NEW SPRITES [y/n]? ")
     if confirm_sprite_additions == 'y':
         # new_sprites_path = input("ENTER PATH OF NEW SPRITES: ")
-        new_sprites_path = input("Input sprite folder to upload: ")
+        new_sprites_path = "D:/Projects/PIF-Game-Manager/myproject/blueprints/main/static/images/sprites"
         
         if not os.path.exists(os.path.dirname(new_sprites_path)):
             print(f"ERROR: Please provide a valid path")
@@ -728,6 +793,39 @@ def prompt_continue():
         exit()
     
 
+def sanitize_sprite_code(sprite_code):
+    split_sprite_code = sprite_code.split('.')
+    
+    # Check for Triple+ fusions
+    if len(split_sprite_code) >= 3:
+        return None, 'TRIPLE+ FUSION', None
+    
+    # Check for fusion or not
+    sprite_group = split_sprite_code[0]
+    if len(split_sprite_code) >= 2:
+        return 'FUSION'
+        # Check if variants are anywhere except at the end of the string
+        for pokedex_number in split_sprite_code[:-1]:
+            stripped_pokedex_number = pokedex_number.rstrip(alphabet)
+            if len(stripped_pokedex_number) < len(pokedex_number):
+                return None, 'ERROR: EXTRA VARIANT(S)', None
+        # Remove and store variant letter from last number
+        last_number = split_sprite_code[-1]
+        stripped_last_number = last_number.rstrip(alphabet)
+        variant = last_number[len(stripped_last_number):]
+        split_sprite_code[-1] = stripped_last_number
+        recombined_number = '.'.join(split_sprite_code)
+        return sprite_group, recombined_number, variant
+        
+    else:
+        return 'BASE'
+        stripped_sprite_group = sprite_group.rstrip(alphabet)
+        variant = sprite_group[len(stripped_sprite_group)]
+        recombined_number = '.'.join(split_sprite_code)
+        return stripped_sprite_group, stripped_sprite_group, variant
+
+
+
 def prep_pokedex_number(sprite):
     prepped_pokedex_number_dict = {}
     try:
@@ -751,6 +849,7 @@ def split_sprite_code(s):
     if len(variant) > 2:
         raise ValueError("Variant letter length greater than 2")
     return pokedex_number, variant        
+
 
 
 def update_family_order(family_orders_to_update):

@@ -25,6 +25,8 @@ def index():
 @login_required
 def create_save():
 
+    current_save = current_user.current_save()
+
     # Set variables
     form = CreateSaveForm()
     # If save count is >=3 return them to the save select page
@@ -50,7 +52,7 @@ def create_save():
                 current_save = current_user.current_save()
                 if current_save:
                     current_save.current_status = False
-                new_save = Save(save_number=new_save_num, ruleset=ruleset, route_tracking=route_tracking, user_info=current_user, current_status=True)
+                new_save = Save(save_number=new_save_num, save_name=form.save_name.data, ruleset=ruleset, route_tracking=route_tracking, user_info=current_user, current_status=True)
                 db.session.add(new_save)
                 player_count = 1
                 for player in form.player_names:
@@ -65,6 +67,7 @@ def create_save():
         flash("Already at max save count. Please delete one of your saves to add another")
         return redirect('/save/select')
     form.player_num.data = ""
+    form.save_name.data = ""
     for player in form.player_names:
         player.player_name.data = ""
     form.ruleset.data = ""

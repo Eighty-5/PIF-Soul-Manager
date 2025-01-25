@@ -320,6 +320,29 @@ def delete_pokemon(id):
     return redirect(url_for('main.view_save'))
     
 
+# Delete pokemon and open route
+@pokemon.route('/delete/open_route/<int:id>', methods=['POST'])
+@login_required
+def delete_pokemon_open(id):
+    current_save = current_user.current_save()
+    pokemon_to_delete = pokemon_verification(id, current_save)
+    pokemon_to_delete.route_caught.complete = False
+    if not pokemon_to_delete:
+        flash(f"ERROR: Deletion Failed - Please select a valid pokemon")
+    if pokemon_to_delete.soul_linked:
+        flash(f"{', '.join([pokemon.pokedex_info.species for pokemon in pokemon_to_delete.soul_linked.linked_pokemon])} deleted from save")
+        # for pokemon in pokemon_to_delete.soul_linked.linked_pokemon:
+        #     db.session.delete(pokemon)
+        db.session.delete(pokemon_to_delete.soul_linked)
+    else:
+        db.session.delete(pokemon_to_delete)
+        flash(f"{pokemon_to_delete.pokedex_info.species} deleted from save")
+    db.session.commit()
+    return redirect(url_for('main.view_save'))
+
+# Delete pokemon and keep route closed
+
+
 @pokemon.route('/evolve/<int:id>', methods=['POST'])
 @login_required
 def evolve_pokemon(id):

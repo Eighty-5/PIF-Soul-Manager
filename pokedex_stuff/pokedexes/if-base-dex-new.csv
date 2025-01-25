@@ -382,7 +382,7 @@ number,species,type_primary,type_secondary,name_1,name_2,family,family_order,hp,
 381,Jirachi,Steel,Psychic,Jira,chi,381,1,100,100,100,100,100,100
 382,Nincada,Bug,Ground,Nin,cada,382,1,31,45,90,30,30,40
 383,Bibarel,Normal,Water,Bi,barel,294,2,79,85,60,60,71,55
-384,Riolu,Fighting,,Rio,lu,296,1,40,70,40,35,40,60
+384,Riolu,Fighting,,Rio,lu,384,1,40,70,40,35,40,60
 385,Slakoth,Normal,,Sla,koth,385,1,60,60,60,35,35,30
 386,Vigoroth,Normal,,Vigo,roth,385,2,80,80,80,55,55,90
 387,Wailmer,Water,,Wail,mer,387,1,130,70,35,70,35,60

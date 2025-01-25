@@ -19,6 +19,7 @@ class PlayerNameForm(FlaskForm):
     player_name = StringField('Player Name')
 
 class CreateSaveForm(FlaskForm):
+    save_name = StringField('Optional: Save Name')
     player_num = SelectField('Number of Players', choices=[('1', '1'), ('2', '2'), ('3', '3'), ('4', '4')], validators=[DataRequired()])
     player_names = FieldList(FormField(PlayerNameForm), min_entries=1)
     ruleset = SelectField('Ruleset', choices=[('1', '1'), ('2', '2'), ('3', '3'), ('4', '4'), ('5', '5')])

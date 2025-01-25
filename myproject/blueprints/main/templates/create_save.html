@@ -30,6 +30,9 @@
 <div class="shadow p-3 mb-5 bg-body-tertiary rounded">
     <form method="POST" action="/save/create">
         {{ form.hidden_tag() }}
+        {{ form.save_name.label(class="form-label") }}
+        {{ form.save_name(class="form-control", placeholder="Save Name") }}
+        <br>
         {{ form.player_num.label(class="form-label") }}
         {{ form.player_num(class="form-control") }}
         <br>
