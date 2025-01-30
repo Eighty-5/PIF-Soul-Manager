@@ -4,7 +4,7 @@ from flask_login import login_required, current_user
 from ...extensions import db
 from ...models import User, Player, Pokedex, Pokemon, Save, Artist, RouteList, SoulLink, Route, PokedexStats
 from ...webforms import CreateSaveForm
-from .main_utils import first_available_save_number, get_column_widths
+from .main_utils import get_column_widths, missing_numbers
 from ...utils import func_timer
 from ..pokemon.pokemon import MANUAL_RULESET, AUTO_RULESET, ROUTE_RULESET, SPECIAL_RULESET
 from ..pokemon.pokemon_utils import pokemon_verification
@@ -43,16 +43,16 @@ def create_save():
     # Validate that form was submited
     if form.validate_on_submit():
         saves = current_user.saves
-        save_num_lst = [save.save_number for save in saves]
+        save_num_lst = [save.slot for save in saves]
         ruleset=int(form.ruleset.data)
         route_tracking = True if ruleset != 1 else False
         if len(save_num_lst) < 3:
-            new_save_num = first_available_save_number(save_num_lst)
+            new_save_num = missing_numbers(save_num_lst, 'first')
             if new_save_num:
                 current_save = current_user.current_save()
                 if current_save:
                     current_save.current_status = False
-                new_save = Save(save_number=new_save_num, save_name=form.save_name.data, ruleset=ruleset, route_tracking=route_tracking, user_info=current_user, current_status=True)
+                new_save = Save(slot=new_save_num, save_name=form.save_name.data, ruleset=ruleset, route_tracking=route_tracking, user_info=current_user, current_status=True)
                 db.session.add(new_save)
                 player_count = 1
                 for player in form.player_names:
@@ -80,8 +80,8 @@ def create_save():
 def delete_save():
     id = current_user.id
     if request.method == 'POST':
-        save_number = request.form['save_to_delete']
-        save_to_delete = db.session.scalar(db.select(Save).where(Save.user_info==current_user, Save.save_number==save_number))
+        slot = request.form['save_to_delete']
+        save_to_delete = db.session.scalar(db.select(Save).where(Save.user_info==current_user, Save.slot==slot))
     if id == save_to_delete.user_info.id or current_user.id == 1:
         db.session.delete(save_to_delete)
         db.session.commit()
@@ -98,18 +98,22 @@ def delete_save():
 @login_required
 def select_save():
     current_save = current_user.current_save()
-    saves = db.session.scalars(db.select(Save).where(Save.user_info==current_user))
+    saves = current_user.saves
     if not saves:
         flash("Please Create a Save First")
         return redirect(url_for('main.create_save')) 
     if request.method == 'POST':
-        new_current_save = db.session.scalar(db.select(Save).where(Save.user_info==current_user, Save.save_number==request.form['save_number']))
+        # Server check validity of form request
+        new_current_save = db.session.scalar(db.select(Save).where(Save.user_info==current_user, Save.slot==request.form['slot']))
+        if not new_current_save in saves:
+            flash("Please select a valid save")
+            return redirect(url_for('main.select_save'))
         if current_save:
             current_save.current_status = False
         new_current_save.current_status = True
         db.session.commit()
         return redirect(url_for('main.view_save'))
-    return render_template('select_save.html', saves=saves)
+    return render_template('select_save_ver1.html', saves=saves)
 
 
 # Redirect to Save Manager for Navbar
@@ -119,7 +123,7 @@ def select_save():
 def view_save():
     current_save = current_user.current_save()
     if current_save:
-        return redirect(url_for('main.save_manager', save_num=current_save.save_number))
+        return redirect(url_for('main.save_manager', save_num=current_save.slot))
     else:
         flash("Please Select a Save to View")
         return redirect(url_for('main.select_save'))
@@ -130,7 +134,7 @@ def view_save():
 @login_required
 def save_manager(save_num):
     current_save = current_user.current_save()
-    save_check = db.session.scalar(db.select(Save).where(Save.user_info==current_user, Save.save_number==save_num))
+    save_check = db.session.scalar(db.select(Save).where(Save.user_info==current_user, Save.slot==save_num))
     if save_check is None:
         flash("No record of that save")
         return redirect(url_for('main.select_save'))
@@ -138,14 +142,14 @@ def save_manager(save_num):
     party_length = db.session.scalar(db.select(Player).where(Player.save_info==current_save, Player.player_number==1)).party_length()   
     column_widths = get_column_widths(current_save.player_count())
     
-    routes = current_save.recorded_routes
+    routes = current_save.routes
     route_list = db.session.scalars(db.select(RouteList))
-    route_check_dict = {route.name:False for route in route_list}
+    route_check_dict = {route.route_name:False for route in route_list}
     for route in routes:
-        route_check_dict[route.route_info.name] = route.complete
+        route_check_dict[route.route_info.route_name] = route.complete
     
     return render_template('save_manager.html', 
-                           save_num=current_save.save_number, 
+                           save_num=current_save.slot, 
                            save=current_save,  
                            party_length=party_length,
                            column_widths=column_widths,
@@ -183,7 +187,7 @@ def preview_fusions(id):
         possible_partners = db.session.scalars(db.select(Pokemon).join(Pokemon.player_info).join(Pokemon.pokedex_info).where(Pokemon.soul_linked!=selected_pokemon.soul_linked, Pokemon.player_info==selected_player, Pokedex.head_pokemon==None, Pokemon.position!='dead', Pokemon.route==selected_pokemon.route))
     
     if ruleset == MANUAL_RULESET:
-        flash(f"Since save is using Full Freedom Ruleset possible fusions shown only for {selected_player.name}")
+        flash(f"Since save is using Full Freedom Ruleset possible fusions shown only for {selected_player.player_name}")
         players = [selected_player]
     else:
         players = current_save.players
@@ -271,12 +275,14 @@ def preview_all_fusions():
             pokemons = [pokemon for pokemon in pokemons]
             while len(pokemons) > 1:
                 for pokemon_1 in pokemons[:1]:
-                    print(pokemon_1)
                     for pokemon_2 in pokemons[1:]:
                         if pokemon_1 != pokemon_2:
-                            route_1_id = pokemon_1.route_caught.route_info.id
-                            route_2_id = pokemon_2.route_caught.route_info.id
-                            route_combo_name = f"{pokemon_1.route_caught.route_info.name} & {pokemon_2.route_caught.route_info.name}"
+                            [route_1_id, route_2_id] = sorted([pokemon_1.route_caught.route_info.id, pokemon_2.route_caught.route_info.id])
+                            print(route_1_id, route_2_id)
+                            if route_1_id > route_2_id:
+                                route_combo_name = f"{pokemon_1.route_caught.route_info.route_name} & {pokemon_2.route_caught.route_info.route_name}"
+                            else:
+                                route_combo_name = f"{pokemon_2.route_caught.route_info.route_name} & {pokemon_1.route_caught.route_info.route_name}"
                             key = f"route{route_1_id}-{route_2_id}"
                             try:
                                 preview_fusions[key]
@@ -300,38 +306,36 @@ def preview_all_fusions():
         while len(linkages) > 1:
             for link_1 in linkages[:1]:
                 link_1_id = link_1.id
-                print(link_1)
                 for link_2 in linkages[1:]:
-                    print(link_2)
                     link_2_id = link_2.id
-                    print(link_1.linked_pokemon)
-                    print(link_2.linked_pokemon)
-                    route_combo_name = f"{link_1.linked_pokemon[0].route_caught.route_info.name} & {link_2.linked_pokemon[0].route_caught.route_info.name}"
-                    for pokemon_1 in link_1.linked_pokemon:
-                        for pokemon_2 in link_2.linked_pokemon:
-                            if pokemon_1.__eq__(pokemon_2, 'player_id'):
-                                key = f"route{link_1_id}-{link_2_id}"
-                                try:
-                                    preview_fusions[key]
+                    comb_lst = link_1.linked_pokemon + link_2.linked_pokemon
+                    if not any([pokemon.pokedex_info.isfusion() for pokemon in comb_lst]):
+                        route_combo_name = f"{link_1.linked_pokemon[0].route_caught.route_info.route_name} & {link_2.linked_pokemon[0].route_caught.route_info.route_name}"
+                        for pokemon_1 in link_1.linked_pokemon:
+                            for pokemon_2 in link_2.linked_pokemon:
+                                if pokemon_1.__eq__(pokemon_2, 'player_id') and not pokemon_1.pokedex_info.isfusion() and not pokemon_2.pokedex_info.isfusion():
+                                    key = f"route{link_1_id}-{link_2_id}"
                                     try:
-                                        fusion_combo = get_fusion(pokemon_1.pokedex_info, pokemon_2.pokedex_info)
-                                        preview_fusions[key]['data'][pokemon_1.player_info.player_number].append(fusion_combo)
+                                        preview_fusions[key]
+                                        try:
+                                            fusion_combo = get_fusion(pokemon_1.pokedex_info, pokemon_2.pokedex_info)
+                                            preview_fusions[key]['data'][pokemon_1.player_info.player_number].append(fusion_combo)
+                                        except KeyError:
+                                            preview_fusions[key]['data'][pokemon_1.player_info.player_number] = []
+                                            fusion_combo = get_fusion(pokemon_1.pokedex_info, pokemon_2.pokedex_info)
+                                            preview_fusions[key]['data'][pokemon_1.player_info.player_number].append(fusion_combo)
                                     except KeyError:
+                                        preview_fusions[key] = {}
+                                        preview_fusions[key]['accordian_name'] = route_combo_name
+                                        preview_fusions[key]['data'] = {}
                                         preview_fusions[key]['data'][pokemon_1.player_info.player_number] = []
                                         fusion_combo = get_fusion(pokemon_1.pokedex_info, pokemon_2.pokedex_info)
                                         preview_fusions[key]['data'][pokemon_1.player_info.player_number].append(fusion_combo)
-                                except KeyError:
-                                    preview_fusions[key] = {}
-                                    preview_fusions[key]['accordian_name'] = route_combo_name
-                                    preview_fusions[key]['data'] = {}
-                                    preview_fusions[key]['data'][pokemon_1.player_info.player_number] = []
-                                    fusion_combo = get_fusion(pokemon_1.pokedex_info, pokemon_2.pokedex_info)
-                                    preview_fusions[key]['data'][pokemon_1.player_info.player_number].append(fusion_combo)
             linkages = linkages[1:]
     elif ruleset == ROUTE_RULESET:
-        routes = [route for route in current_save.recorded_routes]
+        routes = [route for route in current_save.routes]
         for route in routes:
-            route_name = route.route_info.name
+            route_name = route.route_info.route_name
             for player in current_save.players:
                 for pokemon in route.caught_pokemons:
                     if pokemon_1.player_info:
@@ -393,7 +397,7 @@ def testing1():
                         if pokemon_1 != pokemon_2:
                             route_1_id = pokemon_1.route_caught.route_info.id
                             route_2_id = pokemon_2.route_caught.route_info.id
-                            route_combo_name = f"{pokemon_1.route_caught.route_info.name} & {pokemon_2.route_caught.route_info.name}"
+                            route_combo_name = f"{pokemon_1.route_caught.route_info.route_name} & {pokemon_2.route_caught.route_info.route_name}"
                             key = f"route{route_1_id}-{route_2_id}"
                             try:
                                 preview_fusions[key]

@@ -5,7 +5,7 @@ number,species,type_primary,type_secondary,name_1,name_2,family,family_order,hp,
 4,Charmander,Fire,,Char,mander,4,1,39,52,43,60,50,65
 5,Charmeleon,Fire,,Char,meleon,4,2,58,64,58,80,65,80
 6,Charizard,Fire,Flying,Char,izard,4,3,78,84,78,109,85,100
-7,Squirtle,Water,,Squirt,tle,7,1,44,48,65,60,54,43
+7,Squirtle,Water,,Squirt,tle,7,1,44,48,65,50,64,43
 8,Wartortle,Water,,War,tortle,7,2,59,63,80,65,80,58
 9,Blastoise,Water,,Blast,toise,7,3,79,83,100,85,105,78
 10,Caterpie,Bug,,Cater,pie,10,1,45,30,35,20,20,45
@@ -13,7 +13,7 @@ number,species,type_primary,type_secondary,name_1,name_2,family,family_order,hp,
 12,Butterfree,Bug,Flying,Butter,free,10,3,60,45,50,90,80,70
 13,Weedle,Bug,Poison,Wee,dle,13,1,40,35,30,20,20,50
 14,Kakuna,Bug,Poison,Kak,una,13,2,45,25,50,25,25,35
-15,Beedrill,Bug,Poison,Bee,drill,13,3,65,90,40,40,80,75
+15,Beedrill,Bug,Poison,Bee,drill,13,3,65,80,40,45,80,75
 16,Pidgey,Normal,Flying,Pid,gey,16,1,40,45,40,35,35,56
 17,Pidgeotto,Normal,Flying,Pidge,otto,16,2,63,60,55,50,50,71
 18,Pidgeot,Normal,Flying,Pid,geot,16,3,83,80,75,70,70,91
@@ -21,7 +21,7 @@ number,species,type_primary,type_secondary,name_1,name_2,family,family_order,hp,
 20,Raticate,Normal,,Rat,icate,19,2,55,81,60,50,70,97
 21,Spearow,Normal,Flying,Spear,row,21,1,40,60,30,31,31,70
 22,Fearow,Normal,Flying,Fear,row,21,2,65,90,65,61,61,100
-23,Ekans,Poison,,Ek,ans,23,1,30,60,44,40,54,55
+23,Ekans,Poison,,Ek,ans,23,1,35,60,44,40,54,55
 24,Arbok,Poison,,Ar,bok,23,2,60,95,69,65,79,80
 25,Pikachu,Electric,,Pika,chu,172,2,35,55,40,50,50,90
 26,Raichu,Electric,,Rai,chu,172,3,60,90,55,90,80,110
@@ -32,11 +32,11 @@ number,species,type_primary,type_secondary,name_1,name_2,family,family_order,hp,
 31,Nidoqueen,Poison,Ground,Nido,queen,29,3,90,92,87,75,85,76
 32,Nidoran M,Poison,,Nido,ran,32,1,46,57,40,40,40,50
 33,Nidorino,Poison,,Nido,rino,32,2,61,72,57,55,55,65
-34,Nidokinger,Poison,Water,Nido,kinger,32,3,81,102,77,85,75,85
+34,Nidoking,Poison,Ground,Nido,king,32,3,81,102,77,85,75,85
 35,Clefairy,Fairy,,Clef,fairy,173,2,70,45,48,60,65,35
 36,Clefable,Fairy,,Clef,fable,173,3,95,70,73,95,90,60
-37,Vulpix,Fire,Flying,Vul,pix,37,1,38,41,40,50,65,65
-38,Ninetales,Fire,Flying,Nine,tales,37,2,73,76,75,81,100,100
+37,Vulpix,Fire,,Vul,pix,37,1,38,41,40,50,65,65
+38,Ninetales,Fire,,Nine,tales,37,2,73,76,75,81,100,100
 39,Jigglypuff,Normal,Fairy,Jiggly,puff,174,2,115,45,20,45,25,20
 40,Wigglytuff,Normal,Fairy,Wiggly,tuff,174,3,140,70,45,85,50,45
 41,Zubat,Poison,Flying,Zu,bat,41,1,40,45,35,30,40,55
@@ -48,7 +48,7 @@ number,species,type_primary,type_secondary,name_1,name_2,family,family_order,hp,
 47,Parasect,Bug,Grass,Para,sect,46,2,60,95,80,60,80,30
 48,Venonat,Bug,Poison,Veno,nat,48,1,60,55,50,40,55,45
 49,Venomoth,Bug,Poison,Veno,moth,48,2,70,65,60,90,75,90
-50,Diglett,Ground,,Dig,lett,50,1,10,50,25,35,45,95
+50,Diglett,Ground,,Dig,lett,50,1,10,55,25,35,45,95
 51,Dugtrio,Ground,,Dug,trio,50,2,35,100,50,50,70,120
 52,Meowth,Normal,,Meow,th,52,1,40,45,35,40,40,90
 53,Persian,Normal,,Per,sian,52,2,65,70,60,65,65,115
@@ -68,7 +68,7 @@ number,species,type_primary,type_secondary,name_1,name_2,family,family_order,hp,
 67,Machoke,Fighting,,Ma,choke,66,2,80,100,70,50,60,45
 68,Machamp,Fighting,,Ma,champ,66,3,90,130,80,65,85,55
 69,Bellsprout,Grass,Poison,Bell,sprout,69,1,50,75,35,70,30,40
-214,Weepinbell,Grass,Poison,Weepin,bell,69,2,65,90,50,85,45,55
+70,Weepinbell,Grass,Poison,Weepin,bell,69,2,65,90,50,85,45,55
 71,Victreebel,Grass,Poison,Victree,bell,69,3,80,105,65,100,70,70
 72,Tentacool,Water,Poison,Tenta,cool,72,1,40,40,35,50,100,70
 73,Tentacruel,Water,Poison,Tenta,cruel,72,2,80,70,65,80,120,100
@@ -120,7 +120,7 @@ number,species,type_primary,type_secondary,name_1,name_2,family,family_order,hp,
 119,Seaking,Water,,Sea,king,118,2,80,92,65,65,80,68
 120,Staryu,Water,,Star,yu,120,1,30,45,55,70,55,85
 121,Starmie,Water,Psychic,Star,mie,120,2,60,75,85,100,85,115
-122,Mr. Mime,Psychic,,Mr.,mime,258,2,40,45,65,100,120,90
+122,Mr. Mime,Psychic,Fairy,Mr.,mime,258,2,40,45,65,100,120,90
 123,Scyther,Bug,Flying,Scy,ther,123,1,70,110,80,55,80,105
 124,Jynx,Ice,Psychic,Jyn,nx,238,2,65,50,35,115,95,95
 125,Electabuzz,Electric,,Electra,buzz,239,2,65,83,57,95,85,105
@@ -151,7 +151,7 @@ number,species,type_primary,type_secondary,name_1,name_2,family,family_order,hp,
 150,Mewtwo,Psychic,,Mew,two,150,1,106,110,90,154,90,130
 151,Mew,Psychic,,Mew,ew,151,1,100,100,100,100,100,100
 152,Chikorita,Grass,,Chiko,rita,152,1,45,49,65,49,65,45
-153,Bayleef,Grass,,Bay,leef,152,2,60,62,80,63,80,69
+153,Bayleef,Grass,,Bay,leef,152,2,60,62,80,63,80,60
 154,Meganium,Grass,,Mega,nium,152,3,80,82,100,83,100,80
 155,Cyndaquil,Fire,,Cynda,quil,155,1,39,52,43,60,50,65
 156,Quilava,Fire,,Qui,lava,155,2,58,64,58,80,65,80
@@ -212,7 +212,7 @@ number,species,type_primary,type_secondary,name_1,name_2,family,family_order,hp,
 211,Qwilfish,Water,Poison,Qwil,fish,211,1,65,95,85,55,55,85
 212,Scizor,Bug,Steel,Sci,zor,123,2,70,130,100,55,80,65
 213,Shuckle,Bug,Rock,Shu,ckle,213,1,20,10,230,10,230,5
-70,Heracross,Bug,Fighting,Hera,cross,214,1,80,125,75,40,95,85
+214,Heracross,Bug,Fighting,Hera,cross,214,1,80,125,75,40,95,85
 215,Sneasel,Dark,Ice,Snea,sel,215,1,55,95,55,35,75,115
 216,Teddiursa,Normal,,Teddi,ursa,216,1,60,80,50,50,50,40
 217,Ursaring,Normal,,Ursa,ring,216,2,90,130,75,75,75,55
@@ -248,7 +248,7 @@ number,species,type_primary,type_secondary,name_1,name_2,family,family_order,hp,
 247,Pupitar,Rock,Ground,Pupi,tar,246,2,70,84,70,65,70,51
 248,Tyranitar,Rock,Dark,Tyran,itar,246,3,100,134,110,95,100,61
 249,Lugia,Psychic,Flying,Lu,gia,249,1,106,90,130,90,154,110
-250,Ho-oh,Fire,Flying,Ho,oh,250,1,106,130,90,110,154,90
+250,Ho-Oh,Fire,Flying,Ho,oh,250,1,106,130,90,110,154,90
 251,Celebi,Psychic,Grass,Cele,bi,251,1,100,100,100,100,100,100
 252,Azurill,Normal,Fairy,Azu,rill,252,1,50,20,40,20,40,20
 253,Wynaut,Psychic,,Wy,naut,253,1,95,23,48,23,48,23
@@ -261,7 +261,7 @@ number,species,type_primary,type_secondary,name_1,name_2,family,family_order,hp,
 260,Munchlax,Normal,,Munch,lax,260,1,135,85,40,40,85,5
 261,Mantyke,Water,Flying,Man,tyke,261,1,45,20,50,60,120,50
 262,Weavile,Dark,Ice,Wea,vile,215,2,70,120,65,45,85,125
-263,Magnezone,Electric,Steel,Magne,zone,81,3,70,70,115,130,90,60
+263,Magnezone,Steel,Electric,Magne,zone,81,3,70,70,115,130,90,60
 264,Lickilicky,Normal,,Licki,licky,108,2,110,85,95,80,95,50
 265,Rhyperior,Ground,Rock,Rhype,rior,111,3,115,140,130,55,55,40
 266,Tangrowth,Grass,,Tan,growth,114,2,100,100,125,110,50,50
@@ -327,7 +327,7 @@ number,species,type_primary,type_secondary,name_1,name_2,family,family_order,hp,
 326,Probopass,Rock,Steel,Probo,pass,325,2,60,55,145,75,150,40
 327,Honedge,Steel,Ghost,Hon,edge,327,1,45,80,100,35,37,28
 328,Doublade,Steel,Ghost,Dou,blade,327,2,59,110,150,45,49,35
-329,Aegislash,Steel,Ghost,Aegi,slash,327,3,60,140,50,140,50,60
+329,Aegislash,Steel,Ghost,Aegi,slash,327,3,60,50,150,50,150,60
 330,Pawniard,Dark,Steel,Pawn,iard,330,1,45,85,70,40,40,60
 331,Bisharp,Dark,Steel,Bi,sharp,330,2,65,125,100,60,70,70
 332,Luxray,Electric,,Lux,ray,388,3,80,120,79,95,79,70
@@ -340,7 +340,7 @@ number,species,type_primary,type_secondary,name_1,name_2,family,family_order,hp,
 339,Sylveon,Fairy,,Sylv,eon,133,9,95,65,65,110,130,60
 340,Kyogre,Water,,Kyo,gre,340,1,100,100,90,150,140,90
 341,Groudon,Ground,,Grou,don,341,1,100,150,140,100,90,90
-342,Rayquaza,Dragon,Flying,Ray,quaza,342,1,105,180,100,180,100,115
+342,Rayquaza,Dragon,Flying,Ray,quaza,342,1,105,150,90,150,90,95
 343,Dialga,Steel,Dragon,Dial,ga,343,1,100,120,120,150,100,90
 344,Palkia,Water,Dragon,Pal,kia,344,1,90,120,100,150,120,100
 345,Giratina,Ghost,Dragon,Gira,tina,345,1,150,100,120,100,120,90
@@ -362,7 +362,7 @@ number,species,type_primary,type_secondary,name_1,name_2,family,family_order,hp,
 361,Krookodile,Ground,Dark,Krook,odile,409,3,95,117,80,65,70,92
 362,Cofagrigus,Ghost,,Cofa,grigus,411,2,58,50,145,95,105,30
 363,Galvantula,Bug,Electric,Galvan,tula,412,2,70,77,60,97,60,108
-364,Ferrothorn,Grass,Steel,Ferro,thorn,413,2,74,94,131,54,116,20
+364,Ferrothorn,Steel,Grass,Ferro,thorn,413,2,74,94,131,54,116,20
 365,Litwick,Ghost,Fire,Lit,wick,365,1,50,30,55,65,55,20
 366,Lampent,Ghost,Fire,Lamp,ent,365,2,60,40,60,95,60,55
 367,Chandelure,Ghost,Fire,Chande,lure,365,3,60,55,90,145,90,80
@@ -376,13 +376,13 @@ number,species,type_primary,type_secondary,name_1,name_2,family,family_order,hp,
 375,Deino,Dark,Dragon,Dei,no,375,1,52,65,50,45,50,38
 376,Zweilous,Dark,Dragon,Zwei,lous,375,2,72,85,70,65,70,58
 377,Hydreigon,Dark,Dragon,Hydre,igon,375,3,92,105,90,125,90,98
-378,Latias,Dragon,Psychic,Lati,as,378,1,80,100,120,140,150,110
-379,Latios,Dragon,Psychic,Lati,os,379,1,80,130,100,160,120,110
+378,Latias,Dragon,Psychic,Lati,as,378,1,80,80,90,110,130,110
+379,Latios,Dragon,Psychic,Lati,os,379,1,80,90,80,130,110,110
 380,Deoxys,Psychic,,Deo,xys,380,1,50,150,50,150,50,150
 381,Jirachi,Steel,Psychic,Jira,chi,381,1,100,100,100,100,100,100
 382,Nincada,Bug,Ground,Nin,cada,382,1,31,45,90,30,30,40
-383,Bibarel,Normal,Water,Bi,barel,294,2,79,85,60,60,71,55
-384,Riolu,Fighting,,Rio,lu,296,1,40,70,40,35,40,60
+383,Bibarel,Normal,Water,Bi,barel,294,2,79,85,60,55,60,71
+384,Riolu,Fighting,,Rio,lu,384,1,40,70,40,35,40,60
 385,Slakoth,Normal,,Sla,koth,385,1,60,60,60,35,35,30
 386,Vigoroth,Normal,,Vigo,roth,385,2,80,80,80,55,55,90
 387,Wailmer,Water,,Wail,mer,387,1,130,70,35,70,35,60
@@ -411,7 +411,7 @@ number,species,type_primary,type_secondary,name_1,name_2,family,family_order,hp,
 410,Krokorok,Ground,Dark,Kroko,rok,409,2,60,82,45,45,45,74
 411,Yamask,Ghost,,Ya,mask,411,1,38,30,85,55,65,30
 412,Joltik,Bug,Electric,Jol,tik,412,1,50,47,50,57,50,65
-413,Ferroseed,Grass,Steel,Ferro,seed,413,1,44,50,91,24,86,10
+413,Ferroseed,Steel,Grass,Ferro,seed,413,1,44,50,91,24,86,10
 414,Axew,Dragon,,Ax,ew,414,1,46,87,60,30,40,57
 415,Fraxure,Dragon,,Fra,xure,414,2,66,117,70,40,50,67
 416,Golett,Ground,Ghost,Go,lett,416,1,59,74,50,35,50,35
@@ -433,10 +433,10 @@ number,species,type_primary,type_secondary,name_1,name_2,family,family_order,hp,
 432,Oricorio Pa'u,Psychic,Flying,Ori,corio Pa'u,432,1,75,70,70,98,70,93
 433,Oricorio Sensu,Ghost,Flying,Ori,corio Sensu,433,1,75,70,70,98,70,93
 434,Trubbish,Poison,,Trub,bish,434,1,50,50,62,40,62,65
-435,Garbodor,Poison,,Garb,odor,434,2,80,95,92,60,82,75
+435,Garbodor,Poison,,Garb,odor,434,2,80,95,82,60,82,75
 436,Carvanha,Water,Dark,Car,vanha,436,1,45,90,20,65,20,65
 437,Sharpedo,Water,Dark,Sharp,edo,436,2,70,120,40,95,40,95
-438,Phantump,Ghost,Grass,Phant,tump,438,1,43,70,48,50,60,38
+438,Phantump,Grass,Ghost,Phant,tump,438,1,43,70,48,50,60,38
 439,Trevenant,Grass,Ghost,Tre,venant,438,2,85,110,76,65,82,56
 440,Noibat,Flying,Dragon,Noi,bat,440,1,40,30,35,45,40,55
 441,Noivern,Flying,Dragon,Noi,vern,440,2,85,70,80,97,80,123
@@ -457,8 +457,8 @@ number,species,type_primary,type_secondary,name_1,name_2,family,family_order,hp,
 456,Hawlucha,Fighting,Flying,Hawl,lucha,457,1,78,92,75,74,63,118
 457,Cacnea,Grass,,Cac,nea,458,1,50,85,40,85,40,35
 458,Cacturne,Grass,Dark,Cact,turne,458,2,70,115,60,115,60,55
-459,Sandygast,Ghost,Ground,Sandy,gast,460,1,55,55,80,70,45,15
-460,Palossand,Ghost,Ground,Palo,sand,460,2,85,75,110,100,75,35
+459,Sandygast,Ground,Ghost,Sandy,gast,460,1,55,55,80,70,45,15
+460,Palossand,Ground,Ghost,Palo,sand,460,2,85,75,110,100,75,35
 461,Amaura,Rock,Ice,Ama,aura,462,1,77,59,50,67,63,46
 462,Aurorus,Rock,Ice,Auro,rorus,462,2,123,77,72,99,92,58
 463,Rockruff,Rock,,Rock,ruff,464,1,45,65,40,30,40,60
@@ -466,5 +466,37 @@ number,species,type_primary,type_secondary,name_1,name_2,family,family_order,hp,
 465,Lycanroc Midnight,Rock,,Lycan,roc Midnight,464,3,85,115,75,55,75,82
 466,Meloetta Aria,Normal,Psychic,Melo,etta Aria,466,1,100,77,77,128,128,90
 467,Meloetta Pirouette,Normal,Fighting,Melo,etta Pirouette,467,1,100,128,90,77,77,128
-468,Cresselia,Psychic,,Cress,elia,468,1,120,70,110,75,120,85
+468,Cresselia,Psychic,,Cress,elia,468,1,120,70,120,75,130,85
 469,Bruxish,Water,Psychic,Brux,ish,469,1,68,105,70,70,70,92
+470,Ultra Necrozma,Psychic,Dragon,Ultra Necro,zma,470,1,97,167,97,167,97,129
+471,Jangmo-o,Dragon,,Jang,mo-o,471,1,45,55,65,45,45,45
+472,Hakamo-o,Dragon,Fighting,Haka,mo-o,471,2,55,75,90,65,70,65
+473,Kommo-o,Dragon,Fighting,Kom,mo-o,471,3,75,110,125,100,105,85
+474,Wimpod,Bug,Water,Wim,pod,474,1,25,35,40,20,30,80
+475,Golisopod,Bug,Water,Golis,pod,474,2,75,125,140,60,90,40
+476,Fomantis,Grass,,Fom,antis,476,1,40,55,35,50,35,35
+477,Lurantis,Grass,,Lur,antis,476,2,70,105,90,80,90,45
+478,Carbink,Rock,Fairy,Car,bink,478,1,50,50,150,50,150,50
+479,Chespin,Grass,,Ches,pin,479,1,56,61,65,48,45,38
+480,Quilladin,Grass,,Quill,adin,479,2,61,78,95,56,58,57
+481,Chesnaught,Grass,Fighting,Ches,naught,479,3,88,107,122,74,75,64
+482,Fennekin,Fire,,Fenn,ekin,482,1,40,45,40,62,60,60
+483,Braixen,Fire,,Brai,xen,482,2,59,59,58,90,70,73
+484,Delphox,Fire,Psychic,Del,phox,482,3,75,69,72,114,100,104
+485,Froakie,Water,,Froa,kie,485,1,41,56,40,62,44,71
+486,Frogadier,Water,,Frog,adier,485,2,54,63,52,83,56,97
+487,Greninja,Water,Dark,Gre,ninja,485,3,72,95,67,103,71,122
+488,Torkoal,Fire,,Tor,koal,488,1,70,85,140,85,70,20
+489,Pumpkaboo,Ghost,Grass,Pump,kaboo,489,2,44,66,70,44,55,56
+490,Gourgeist,Ghost,Grass,Gour,geist,489,3,65,90,122,58,75,84
+491,Swirlix,Fairy,,Swir,lix,491,1,62,48,66,59,57,49
+492,Slurpuff,Fairy,,Slur,puff,491,2,82,80,86,85,75,72
+493,Scraggy,Dark,Fighting,Scra,ggy,493,1,50,75,70,35,70,48
+494,Scrafty,Dark,Fighting,Scra,fty,493,2,65,90,115,45,115,58
+495,Lotad,Water,Grass,Lo,tad,495,1,40,30,30,40,50,30
+496,Lombre,Water,Grass,Lom,bre,495,2,60,50,50,60,70,50
+497,Ludicolo,Water,Grass,Ludi,colo,495,3,80,70,70,90,100,70
+498,Minior,Rock,Flying,Min,ior,498,1,60,60,100,60,100,60
+499,Minior Core,Rock,Flying,Min,ior Core,499,1,60,100,60,100,60,120
+500,Diancie,Rock,Fairy,Dian,cie,500,1,50,100,150,100,150,50
+501,Luvdisc,Water,,Luv,disc,501,1,43,30,55,40,65,97

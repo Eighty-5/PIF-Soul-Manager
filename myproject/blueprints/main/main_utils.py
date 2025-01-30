@@ -2,9 +2,15 @@ from ...extensions import db
 from ...models import User, Player, Pokedex, Pokemon, Save, Artist, RouteList, SoulLink, Route
 from ...utils import func_timer
 
-def first_available_save_number(lst):
+def missing_numbers(lst, option):
     try:
-        return sorted(set(range(1, 4)) - set(lst))[0]
+        missing_lst = sorted(set(range(1, 4)) - set(lst))
+        if option == 'first':
+            return missing_lst[0]
+        elif option == 'all':
+            return missing_lst
+        else:
+            raise Exception("missing_numbers requires an option of 'first' or 'all'")
     except IndexError:
         return None
     

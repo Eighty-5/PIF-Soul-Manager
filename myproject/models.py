@@ -48,7 +48,7 @@ class User(db.Model, UserMixin):
     username: Mapped[str] = mapped_column(String(20), unique=True)
     hash: Mapped[str] = mapped_column(String(128))
 
-    saves: Mapped[list["Save"]] = relationship(back_populates="user_info", cascade="all, delete")
+    saves: Mapped[list["Save"]] = relationship(back_populates="user_info", order_by="Save.slot", cascade="all, delete")
 
     def current_save(self):
         for save in self.saves:
@@ -65,7 +65,7 @@ class Save(db.Model):
     
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
-    save_number: Mapped[int]
+    slot: Mapped[int]
     save_name: Mapped[Optional[str]] = mapped_column(String(32))
     ruleset: Mapped[int]
     route_tracking: Mapped[bool] = mapped_column(default=False)
@@ -73,11 +73,21 @@ class Save(db.Model):
 
     user_info: Mapped["User"] = relationship(back_populates="saves")
     players: Mapped[list["Player"]] = relationship(back_populates="save_info", cascade="all, delete")
-    recorded_routes: Mapped[list["Route"]] = relationship(back_populates="save_info", cascade="all, delete-orphan")
+    routes: Mapped[list["Route"]] = relationship(back_populates="save_info", cascade="all, delete-orphan")
     soul_links: Mapped[list["SoulLink"]] = relationship(back_populates="save_info", order_by="SoulLink.soul_link_number", cascade="all, delete-orphan")
 
-    def get_routelist_list(self):
-        return [route.route_info for route in recorded_routes]
+    def availabe_routes(self):
+        all_routes = db.session.scalars(db.select(RouteList.route_name)).all()
+        completed_routes = self.completed_routes()
+        available_routes = frozenset(all_routes).difference(completed_routes)
+        return available_routes
+
+    def completed_routes(self):
+        completed_routes = []
+        for route in self.routes:
+            if route.complete:
+                completed_routes.append(route.route_info.route_name)
+        return completed_routes
 
     def player_count(self):
         return len(self.players)
@@ -94,7 +104,7 @@ class Save(db.Model):
         return new_soul_link
 
     def __repr__(self) -> str:
-        return f"Save(id={self.id!r}, number={self.save_number!r}, user={self.user_info.username!r}, ruleset={self.ruleset!r})"
+        return f"Save(id={self.id!r}, number={self.slot!r}, user={self.user_info.username!r}, ruleset={self.ruleset!r})"
 
 
 class Player(db.Model):
@@ -105,11 +115,16 @@ class Player(db.Model):
     player_number: Mapped[int]
     player_name: Mapped[str] = mapped_column(String(20))
     
-    pokemon_caught: Mapped[list["Pokemon"]] = relationship(back_populates="player_info", order_by="Pokemon.soul_link_id.desc(), Pokemon.route_id", cascade="all, delete")
+    pokemons: Mapped[list["Pokemon"]] = relationship(back_populates="player_info", order_by="Pokemon.soul_link_id.desc(), Pokemon.route_id", cascade="all, delete")
     save_info: Mapped["Save"] = relationship(back_populates="players", foreign_keys=[save_id])
 
     def party_length(self):
-        return len(db.session.scalars(db.select(Pokemon).where(Pokemon.player_info==self, Pokemon.position=="party")).all())
+        # return len(db.session.scalars(db.select(Pokemon).where(Pokemon.player_info==self, Pokemon.position=="party")).all())
+        return len(self.pokemon_by_position(position="party").all()) 
+
+    def pokemon_by_position(self, position):
+        return db.session.scalars(db.select(Pokemon).where(Pokemon.player_info==self, Pokemon.position==position))
+
 
     def __repr__(self) -> str:
         return f"Player(id={self.id!r}, number={self.player_number!r}, name={self.player_name!r}, user={self.save_info.user_info.username!r})"
@@ -127,9 +142,9 @@ class Pokemon(CRUDMixin, db.Model):
     nickname: Mapped[Optional[str]] = mapped_column(String(30))
     position: Mapped[str] = mapped_column(String(5))
 
-    player_info: Mapped["Player"] = relationship(back_populates="pokemon_caught")
+    player_info: Mapped["Player"] = relationship(back_populates="pokemons")
     pokedex_info: Mapped["Pokedex"] = relationship()
-    sprite: Mapped[Optional["Sprite"]] = relationship()
+    sprite_info: Mapped[Optional["Sprite"]] = relationship()
     route_caught: Mapped[Optional["Route"]] = relationship(back_populates="caught_pokemons")
     soul_linked: Mapped[Optional["SoulLink"]] = relationship(back_populates="linked_pokemon")
 
@@ -140,42 +155,30 @@ class Pokemon(CRUDMixin, db.Model):
             d = float('NaN')
             return all(self.__dict__.get(a, d) == other.__dict__.get(a, d) for a in attributes)
         return self.__dict__ == other.__dict__
-        
-    def player_number(self):
-        return self.player_info.player_number
 
-    def get_other_pokemon_route(self):
-        pokemon_by_route = self.route_caught.caught_pokemon
-        for pokemon in pokemon_by_route:
-            if pokemon.player_info == self.player_info:
-                return pokemon
     def set_default_sprite(self):
-        new_sprite = db.session.scalar(db.select(Sprite).where(Sprite.pokedex_info==self.pokedex_info, Sprite.variant_let==''))
-        self.sprite = new_sprite
-        return db.session.commit()
+        new_sprite = db.session.scalar(db.select(Sprite).where(Sprite.pokedex_info==self.pokedex_info, Sprite.variant==''))
+        self.sprite_info = new_sprite
 
-    def switch_position(self, position):
-        switched_pokemon = []
-        if self.soul_linked:
-            for pokemon in self.soul_linked.linked_pokemon:
-                if position == "party" and pokemon.player_info.party_length() >= 6:
-                    flash(f"{pokemon.player_info.player_name}'s party is full")
-                    return False
-                pokemon.position = position
-            flash(f"{', '.join([pokemon.pokedex_info.species for pokemon in self.soul_linked.linked_pokemon])} switched position to '{position.title()}'")
-        else:
-            if position == "party" and self.player_info.party_length() >= 6:
-                flash(f"{pokemon.player_info.player_name}'s party is full")
+    def switch_position(self, other=None, self_position=None):
+        switch_dict = {self_position:self}
+        if other:
+            if not isinstance(other, type(self)):
+                return NotImplemented
+            switch_dict[self.position] = other
+        print(switch_dict)
+        for position, pokemon_to_switch in switch_dict.items():
+            if pokemon_to_switch.soul_linked:
+                for pokemon in pokemon_to_switch.soul_linked.linked_pokemon:
+                    pokemon.position = position
+            else:
+                pokemon_to_switch.position = position
+        for player in self.player_info.save_info.players:
+            if player.party_length() > 6:
                 return False
-            self.position = position
-            flash(f"{self.pokedex_info.species} switched position to '{position.title()}'")
         
-        return db.session.commit()
-
-    # def fusion(self, body_pokemon):
-    #     if not isinstance(other, type(self)):
-    #         return NotImplemented
-    #     fusion_pokedex_info = db.session.scalar(db.select(Pokedex).where(Pokedex.head_pokemon==self.pokedex_info, Pokedex.body_pokemon==body_pokemon.pokedex_info))
+        db.session.commit()
+        return True
 
     def __repr__(self) -> str:
         return (f"Pokemon(id={self.id!r}, player={self.player_info.player_name!r}, pokedex_number={self.pokedex_info.pokedex_number!r}, "
@@ -189,7 +192,6 @@ class SoulLink(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
     save_id: Mapped[int] = mapped_column(ForeignKey("save.id"))
     soul_link_number: Mapped[int]
-    # position: Mapped[str] = mapped_column(String(5))
 
     linked_pokemon: Mapped[Optional[list["Pokemon"]]] = relationship(back_populates="soul_linked", cascade="all, delete")
     save_info: Mapped["Save"] = relationship(back_populates="soul_links")
@@ -210,27 +212,21 @@ class Route(db.Model):
     complete: Mapped[bool]
 
     caught_pokemons: Mapped[list["Pokemon"]] = relationship(back_populates="route_caught")
-    save_info: Mapped["Save"] = relationship(back_populates="recorded_routes")
+    save_info: Mapped["Save"] = relationship(back_populates="routes")
     route_info: Mapped["RouteList"] = relationship()
 
     def __repr__(self) -> str:
-        return f"Route(id={self.id!r}, save_id={self.save_id!r}, route_name={self.route_info.name!r})"
+        return f"Route(id={self.id!r}, save_id={self.save_id!r}, route_name={self.route_info.route_name!r})"
     
 
 class RouteList(db.Model):
     __tablename__ = "route_list"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(30), unique=True)
-    # soft_delete: Mapped[bool]
-
-
-    # @classmethod
-    # def total_count(cls) -> int:
-    #     return db.session.scalar(db.select(func.count("*")).select_from(RouteList))
+    route_name: Mapped[str] = mapped_column(String(30), unique=True)
 
     def __repr__(self) -> str:
-        return f"RouteList(id={self.id!r}, name={self.name!r})"
+        return f"RouteList(id={self.id!r}, name={self.route_name!r})"
     
 
 class Pokedex(CRUDMixin, db.Model):
@@ -243,8 +239,7 @@ class Pokedex(CRUDMixin, db.Model):
     species: Mapped[str] = mapped_column(String(30))
     type_primary: Mapped[str] = mapped_column(String(10))
     type_secondary: Mapped[Optional[str]] = mapped_column(String(10))
-    family: Mapped[str] = mapped_column(String(17))
-    family_id: Mapped[Optional[int]] = mapped_column(ForeignKey("pokedex_family.id"))
+    family_id: Mapped[Optional[int]] = mapped_column(ForeignKey("family.id"))
     family_order: Mapped[str] = mapped_column(String(10))
     name_1: Mapped[Optional[str]] = mapped_column(String(20))
     name_2: Mapped[Optional[str]] = mapped_column(String(20))
@@ -257,10 +252,15 @@ class Pokedex(CRUDMixin, db.Model):
         back_populates="body_pokemon", remote_side=[body_id], foreign_keys=[body_id], cascade="all, delete-orphan")
     stats: Mapped["PokedexStats"] = relationship(back_populates="info", cascade="all, delete-orphan")
     sprites: Mapped[list["Sprite"]] = relationship(back_populates="pokedex_info", cascade="all, delete-orphan")
-    evolution_family: Mapped["PokedexFamily"] = relationship(back_populates="evolutions")
+    family: Mapped["Family"] = relationship(back_populates="evolutions")
+
+    def isfusion(self):
+        if self.head_pokemon:
+            return True
+        return False
 
     def evolutions(self):
-        return self.evolution_family.evolutions
+        return self.family.evolutions
 
     def final_evolution(self):
         return self.evolutions()[-1]
@@ -269,7 +269,7 @@ class Pokedex(CRUDMixin, db.Model):
         return self.evolutions()[0]
 
     def split_names(self) -> str:
-        if self.head_pokemon:
+        if self.isfusion():
             return f"{self.head_pokemon.species} + {self.body_pokemon.species}"
         else:
             return self.species 
@@ -290,26 +290,34 @@ class Pokedex(CRUDMixin, db.Model):
     
 
     def __repr__(self) -> str:
-        if self.head_pokemon:
+        if self.isfusion():
             return (f"Pokedex(id={self.id!r}, pokedex_number={self.pokedex_number!r}, species={self.species!r}, "
                     f"head_pokemon={self.head_pokemon.species!r}, body_pokemon={self.body_pokemon.species!r}, "
                     f"type_primary={self.type_primary!r}, type_secondary={self.type_secondary!r}, "
-                    f"family={self.family!r}, family_order={self.family_order!r})"
+                    f"family={self.family.family_number!r}, family_order={self.family_order!r})"
                     )
         else:
             return (f"Pokedex(id={self.id!r}, pokedex_number={self.pokedex_number!r}, species={self.species!r}, "
                     f"type_primary={self.type_primary!r}, type_secondary={self.type_secondary!r}, "
-                    f"family={self.family!r}, family_order={self.family_order!r}, "
+                    f"family={self.family.family_number!r}, family_order={self.family_order!r}, "
                     f"name_1={self.name_1}, name_2={self.name_2})"
                     )
     
 
-class PokedexFamily(db.Model):
-    __tablename__ = "pokedex_family"
+class Family(db.Model):
+    __tablename__ = "family"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     family_number: Mapped[str] = mapped_column(String(17))
-    evolutions: Mapped[Optional[list["Pokedex"]]] = relationship(back_populates="evolution_family", order_by="Pokedex.family_order")
+    evolutions: Mapped[Optional[list["Pokedex"]]] = relationship(back_populates="family", order_by="Pokedex.family_order")
+
+    def __eq__(self, other, *attributes):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        if attributes:
+            d = float('NaN')
+            return all(self.__dict__.get(a, d) == other.__dict__.get(a, d) for a in attributes)
+        return self.__dict__ == other.__dict__
 
 
 class PokedexStats(db.Model):
@@ -327,16 +335,14 @@ class PokedexStats(db.Model):
     info: Mapped["Pokedex"] = relationship(back_populates="stats")
 
     def total(self):
-        return self.attack + self.defense + self.sp_attack + self.sp_defense + self.speed 
+        return self.hp + self.attack + self.defense + self.sp_attack + self.sp_defense + self.speed 
     
     def __eq__(self, other, *attributes):
         if not isinstance(other, type(self)):
             return NotImplemented
-        
         if attributes:
             d = float('NaN')
             return all(self.__dict__.get(a, d) == other.__dict__.get(a, d) for a in attributes)
-        
         return self.__dict__ == other.__dict__
     
 
@@ -350,35 +356,35 @@ class Sprite(db.Model):
     __tablename__ = "sprite"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    variant_let: Mapped[str] = mapped_column(String(2))
+    variant: Mapped[str] = mapped_column(String(2))
     pokedex_id: Mapped[Optional[int]] = mapped_column(ForeignKey("pokedex.id"))
     artist_id: Mapped[int] = mapped_column(ForeignKey("artist.id"))
 
-    artists: Mapped["Artist"] = relationship(back_populates="sprites")
+    artist_info: Mapped["Artist"] = relationship(back_populates="sprites")
     pokedex_info: Mapped["Pokedex"] = relationship(back_populates="sprites")
 
     def sprite_group(self):
-        if self.pokedex_info.head_pokemon:
+        if self.pokedex_info.isfusion():
             return f"{self.pokedex_info.head_pokemon.pokedex_number}"
         else:
             return f"{self.pokedex_info.pokedex_number}"
 
     def sprite_code(self):
-        return f"{self.pokedex_info.pokedex_number}{self.variant_let}"
+        return f"{self.pokedex_info.pokedex_number}{self.variant}"
     
     def __repr__(self) -> str:
         return (f"Sprite(id={self.id!r}, sprite_code={self.sprite_code()!r}, species={self.pokedex_info.species}, "
-                f"artist={self.artists.name!r}), sprite_group={self.sprite_group()!r}")
+                f"artist={self.artist_info.artist_name!r}), sprite_group={self.sprite_group()!r}")
     
 
 class Artist(db.Model):
     __tablename__ = "artist"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(100), unique=True)
+    artist_name: Mapped[str] = mapped_column(String(100), unique=True)
 
-    sprites: Mapped[Optional[list["Sprite"]]] = relationship(back_populates="artists", cascade="all, delete-orphan")
+    sprites: Mapped[Optional[list["Sprite"]]] = relationship(back_populates="artist_info", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
-        return f"Artist(id={self.id!r}, name={self.name!r})"
+        return f"Artist(id={self.id!r}, name={self.artist_name!r})"
     

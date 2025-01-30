@@ -6,48 +6,49 @@
 
 {% block main %}
 <table class="table table-hover table-bordered table-striped">
+  <tr>
+    <td class="title">ID</td>
+    <td class="title">Save ID</td>        
+    <td class="title">Player ID</td>
+    <td class="title">Pokedex Number</td>
+    <td class="title">Species</td>
+    <td class="title">Sprite Variant</td>
+    <td class="title">Nickname</td>
+    <td class="title">Linked Pokemon</td>
+    <td class="title">Route</td>
+    <td class="title">Head</td>
+    <td class="title">Body</td>
+    <td class="title">Position</td>
+    <td class="title">Delete</td>
+  </tr>
+  {% for pokemon in pokemons %}
     <tr>
-        <td class="title">ID</td>
-        <td class="title">Save ID</td>        
-        <td class="title">Player ID</td>
-        <td class="title">Pokedex Number</td>
-        <td class="title">Species</td>
-        <td class="title">Sprite Variant</td>
-        <td class="title">Nickname</td>
-        <td class="title">Linked Pokemon</td>
-        <td class="title">Route</td>
-        <td class="title">Head</td>
-        <td class="title">Body</td>
-        <td class="title">Position</td>
-        <td class="title">Delete</td>
+      <form action="{{ url_for('admin.admin_delete_pokemon', pokemon_id=pokemon.id) }}" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <td>{{ pokemon.id }}</td>
+        <td>{{ pokemon.player_info.save_info.id }}</td>
+        <td>{{ pokemon.player_id }}</td>
+        <td>{{ pokemon.pokedex_info.pokedex_number }}</td>
+        <td>{{ pokemon.pokedex_info.species }}</td>
+        <td>{{ pokemon.sprite_id }}</td>
+        <td>{{ pokemon.nickname }}</td>
+        <td>
+          {% if pokemon.soul_linked %}
+            {% for soullinked in pokemon.soul_linked.linked_pokemon %}
+              {% if soullinked != pokemon %}
+                {{ soullinked.pokedex_info.species }}
+              {% endif %}
+            {% endfor %}
+          {% endif %}
+        </td>
+        <td>{{ pokemon.route_id }}</td>
+        <td>{{ pokemon.pokedex_info.head_pokemon.species }}</td>
+        <td>{{ pokemon.pokedex_info.body_pokemon.species }}</td>
+        <td>{{ pokemon.position }}</td>
+        <td><button class="btn btn-danger">Delete</button></td>
+          
+      </form>
     </tr>
-    {% for pokemon in pokemons %}
-        <tr>
-            <form action="{{ url_for('admin.admin_delete_pokemon', pokemon_id=pokemon.id) }}" method="POST">
-                <td>{{ pokemon.id }}</td>
-                <td>{{ pokemon.player_info.save_info.id }}</td>
-                <td>{{ pokemon.player_id }}</td>
-                <td>{{ pokemon.pokedex_info.pokedex_number }}</td>
-                <td>{{ pokemon.pokedex_info.species }}</td>
-                <td>{{ pokemon.sprite.variant_let }}</td>
-                <td>{{ pokemon.nickname }}</td>
-                <td>
-                  {% if pokemon.soul_linked %}
-                    {% for soullinked in pokemon.soul_linked.linked_pokemon %}
-                      {% if soullinked != pokemon %}
-                        {{ soullinked.pokedex_info.species }}
-                      {% endif %}
-                    {% endfor %}
-                  {% endif %}
-                </td>
-                <td>{{ pokemon.route_caught.name }}</td>
-                <td>{{ pokemon.pokedex_info.head_pokemon.species }}</td>
-                <td>{{ pokemon.pokedex_info.body_pokemon.species }}</td>
-                <td>{{ pokemon.position }}</td>
-                <td><button class="btn btn-danger">Delete</button></td>
-                
-            </form>
-        </tr>
-    {% endfor %}
+  {% endfor %}
 </table>
 {% endblock %}

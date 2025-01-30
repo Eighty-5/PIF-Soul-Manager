@@ -301,3 +301,34 @@ INFO:root:create_fusion ran with args: (Pokedex(id=None, pokedex_number='10', sp
 INFO:root:delete_from_pokedex ran with args: () and kwargs: {'pokedex_object': Pokedex(id=10, pokedex_number='10', species='Caterpie', type_primary='Bug', type_secondary='', family='10', family_order='1', name_1=Cater, name_2=pie)}
 INFO:root:delete_from_pokedex ran with args: () and kwargs: {'pokedex_object': Pokedex(id=100, pokedex_number='10', species='Caterpie', type_primary='Bug', type_secondary='', family='10', family_order='1', name_1=Cater, name_2=pie)}
 INFO:root:delete_from_pokedex ran with args: () and kwargs: {'pokedex_object': Pokedex(id=100, pokedex_number='10', species='Caterpie', type_primary='Bug', type_secondary='', family='10', family_order='1', name_1=Cater, name_2=pie)}
+ERROR:sqlalchemy.pool.impl.QueuePool:Error closing cursor
+Traceback (most recent call last):
+  File "D:\projects\pif-game-manager\venv\Lib\site-packages\sqlalchemy\engine\result.py", line 2270, in _fetchall_impl
+    return list(self.iterator)
+           ^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\pif-game-manager\venv\Lib\site-packages\sqlalchemy\orm\loading.py", line 219, in chunks
+    fetch = cursor._raw_all_rows()
+            ^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\pif-game-manager\venv\Lib\site-packages\sqlalchemy\engine\result.py", line 540, in _raw_all_rows
+    rows = self._fetchall_impl()
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\pif-game-manager\venv\Lib\site-packages\sqlalchemy\engine\cursor.py", line 2103, in _fetchall_impl
+    return self.cursor_strategy.fetchall(self, self.cursor)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\pif-game-manager\venv\Lib\site-packages\sqlalchemy\engine\cursor.py", line 1139, in fetchall
+    self.handle_exception(result, dbapi_cursor, e)
+  File "D:\projects\pif-game-manager\venv\Lib\site-packages\sqlalchemy\engine\cursor.py", line 1080, in handle_exception
+    result.connection._handle_dbapi_exception(
+  File "D:\projects\pif-game-manager\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2338, in _handle_dbapi_exception
+    raise exc_info[1].with_traceback(exc_info[2])
+  File "D:\projects\pif-game-manager\venv\Lib\site-packages\sqlalchemy\engine\cursor.py", line 1135, in fetchall
+    rows = dbapi_cursor.fetchall()
+           ^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\projects\pif-game-manager\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2195, in _safe_close_cursor
+    cursor.close()
+sqlite3.ProgrammingError: Cannot operate on a closed database.

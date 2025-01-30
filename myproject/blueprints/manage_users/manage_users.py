@@ -38,7 +38,7 @@ def login():
 @manage_users.route('/logout', methods=['GET', 'POST'])
 @login_required
 def logout():
-    current_save = db.session.scalar(db.select(Save).where(Save.user_info==current_user, Save.current_status==True))
+    current_save = current_user.current_save()
     if current_save:
         current_save.current = False
     db.session.commit()
@@ -67,10 +67,11 @@ def register():
             else:
                 flash("User already Exists")
             # Clear form
-            form.username.data = ""
-            form.password.data = ""
-            form.password_confirm.data = ""
-            return render_template('register.html', form=form)
+        form.username.data = ""
+        form.password.data = ""
+        form.password_confirm.data = ""
+        flash("Please Ensure Passwords match")
+        return render_template('register.html', form=form)
     else:
         return render_template('register.html', form=form)
     

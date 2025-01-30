@@ -1,0 +1,12 @@
+Bug Fixes:
+#2 - Incorrect Stats
+#3 - If there is no current save, logout fails
+#4 - Incorrect sorting of routes
+#5 - 'Save' displayed instead of 'Save Slot' in some instances
+#6 - Preview fusions for ruleset 5 split up route combinations in some instances
+#7 - Preivew fusions for auto-ruleset would not ignore fused pokemon, giving error
+#8 - Pokedex using incorrect generation for stats
+#9 - Save Selection page displaying sprites vertically instead of horizontally
+
+Additional Updates
+1. Updated naming conventions for tables

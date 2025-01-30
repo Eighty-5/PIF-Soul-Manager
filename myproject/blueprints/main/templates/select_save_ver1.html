@@ -1,0 +1,54 @@
+{% extends 'layout.html' %}
+
+{% block title %}
+    Save Select
+{% endblock %}
+
+{% block header %}
+    Select Save
+{% endblock %}
+
+{% block main %}
+<div class="container-fluid">
+  {% for save in saves %}
+    <div class="row p-2 mb-2 rounded" style="background-color: lightgrey;">
+      <div class="row">
+        <div class="col-auto">
+          <h1>Save Slot {{ save.slot }}</h1>
+        </div>
+        <div class="col-auto">
+          <form action="{{ url_for('main.select_save')}}" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <button class="btn btn-primary" name="slot" value="{{ save.slot }}">Select</button>
+          </form>
+        </div>
+        <div class="col-auto">
+          <form action="{{ url_for('main.delete_save')}}" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <button class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this save?')" name="save_to_delete" value="{{ save.slot }}">Delete</button>
+          </form>
+        </div>
+      </div>
+      <div class="row">
+        <h3>{{ save.save_name + ' - ' if save.save_name }} Ruleset {{ save.ruleset }}</h3>
+      </div>
+      <div class="row">
+        {% for player in save.players %}
+          <div class="row mb-2 rounded" style="background-color: lightblue;">
+            <h2>{{ player.player_name }}</h2>
+            {% for pokemon in player.pokemons %}
+              {% if pokemon.position == "party" %}
+                <div class="col-md-2">
+                  <div><img class="mx-auto d-block" src="{{ url_for('main.static', filename='images/sprites/' ~ pokemon.sprite_info.sprite_group() ~ '/' ~ pokemon.sprite_info.sprite_code() ~ '.png') }}" onerror="this.onerror=null; this.src='/main/static/images/sprites/default/default.png'" width="150" height="150"></div>
+                  artist: {{ pokemon.sprite_info.artist_info.artist_name }}
+                </div>
+              {% endif %} 
+            {% endfor %}
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endfor %}
+</div>
+    
+{% endblock %}

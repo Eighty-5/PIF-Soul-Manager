@@ -11,7 +11,7 @@
   {% if save.save_name %}
     <h1 style="text-align: center;">{{ save.save_name }} - Ruleset {{ save.ruleset }}</h1>
   {% else %}
-    <h1 style="text-align: center;">Save {{ save.save_number }} - Ruleset {{ save.ruleset }}</h1>
+    <h1 style="text-align: center;">Save {{ save.slot }} - Ruleset {{ save.ruleset }}</h1>
   {% endif %}
   <br></br>
   <form action="{{ url_for('main.preview_all_fusions') }}" method="post" style="display: inline-block;">
@@ -74,7 +74,7 @@
               {% for part in ["Head", "Body"] %}
                 <select class="form-select" aria-label="Default select example" name="{{ part }}_{{ player.player_number }}" id="fuse_{{ part }}" onchange="fuse_options()">
                   <option selected disabled>Fusion: {{ part }}</option>
-                  {% for pokemon in player.pokemon_caught %}
+                  {% for pokemon in player.pokemons %}
                     {% if not pokemon.pokedex_info.head_pokemon %}
                       <option value="{{ pokemon.id }}">({{ pokemon.route_id }}) {{ pokemon.pokedex_info.species }}</option>
                     {% endif %}
@@ -101,7 +101,7 @@
           {% for player in save.players %}
           <div class="col-lg-{{ column_widths['player_column'] }}">
             <h2 style="text-align:center">{{ player.player_name }}</h2>
-            {% for pokemon in player.pokemon_caught if pokemon.position == "party" %}
+            {% for pokemon in player.pokemons if pokemon.position == "party" %}
               <div class="row shadow mb-1" style="background-color: lightblue;">
                 <!-- Pokemon Name and Typing -->
                 <h4 style="text-align: center; margin-bottom: 0px;">
@@ -140,7 +140,7 @@
                     <div class="input-group mb-1">
                       <select class="form-select" id="inputGroupSelect03" aria-label="Example select with button addon" name="switch_with">
                         <option value="sendbox">Send to Box</option>
-                        {% for box_pokemon in player.pokemon_caught %}
+                        {% for box_pokemon in player.pokemons %}
                           {% if box_pokemon.position == "box" %}
                             <option value="{{ box_pokemon.id }}">{{ box_pokemon.pokedex_info.species }}</option>
                           {% endif %}
@@ -156,10 +156,10 @@
                       <select class="form-select" id="inputGroupSelect03" aria-label="Example select with button addon" name="variant_select">
                         <option selected disabled>Sprite Variants</option>
                         {% for sprite in pokemon.pokedex_info.sprites %}
-                          {% if sprite.variant_let == '' %}
+                          {% if sprite.variant == '' %}
                             <option value="default">Default</option>
                           {% else %}
-                            <option value="{{ sprite.variant_let }}">{{ sprite.variant_let.upper() }}</option>
+                            <option value="{{ sprite.variant }}">{{ sprite.variant.upper() }}</option>
                           {% endif %}
                         {% endfor %}
                       </select>
@@ -180,7 +180,7 @@
                             <option selected disabled>Link with ...</option>
                             {% for other_player in save.players %}
                               {% if other_player != player %}
-                                {% for other_pokemon in other_player.pokemon_caught %}
+                                {% for other_pokemon in other_player.pokemons %}
                                   {% if other_pokemon.soul_linked != pokemon.soul_linked %}
                                     <option value="{{ other_pokemon.id }}">{{ other_pokemon.pokedex_info.species }}</option>
                                   {% endif %}
@@ -214,18 +214,8 @@
                 </div>
                 <!-- Variant Form and Sprite Info -->
                 <div class="col-md-6">
-                  {% if not pokemon.sprite %}
-                    {% if pokemon.pokedex_info.head_pokemon %}
-                      <div><img class="mx-auto d-block" src="{{ url_for('main.static', filename='images/sprites/' ~ pokemon.pokedex_info.head_pokemon.pokedex_number ~ '/' ~ pokemon.pokedex_info.pokedex_number ~ '.png') }}" onerror="this.onerror=null; this.src='/main/static/images/sprites/default/default.png'" width="150" height="150"></div>
-                      artists: japeal
-                    {% else %}
-                      <div><img class="mx-auto d-block" src="{{ url_for('main.static', filename='images/sprites/' ~ pokemon.pokedex_info.pokedex_number ~ '/' ~ pokemon.pokedex_info.pokedex_number ~ '.png') }}" onerror="this.onerror=null; this.src='/main/static/images/sprites/default/default.png'" width="150" height="150"></div>
-                      artists: japeal
-                    {% endif %}
-                  {% else %}
-                    <div><img class="mx-auto d-block" src="{{ url_for('main.static', filename='images/sprites/' ~ pokemon.sprite.sprite_code() ~ '.png') }}" onerror="this.onerror=null; this.src='/main/static/images/sprites/default/default.png'" width="150" height="150"></div>
-                    artist: {{ pokemon.sprite.artists.name }}
-                  {% endif %}
+                  <div><img class="mx-auto d-block" src="{{ url_for('main.static', filename='images/sprites/' ~ pokemon.sprite_info.sprite_group() ~ '/' ~ pokemon.sprite_info.sprite_code() ~ '.png') }}" onerror="this.onerror=null; this.src='/main/static/images/sprites/default/default.png'" width="150" height="150"></div>
+                  artist: {{ pokemon.sprite_info.artist_info.artist_name }}
                 </div>
 
                 <a style="text-align: center;" target="_blank" rel="noopener noreferrer" href="https://if.daena.me/{{ pokemon.pokedex_info.pokedex_number }}/">More info on FusionDex</a>
@@ -250,7 +240,7 @@
           {% for player in save.players %}
             <div class="col-md-{{ column_widths['player_column'] }}">
               <h2 style="text-align:center">{{ player.player_name }}</h2>
-              {% for pokemon in player.pokemon_caught %}
+              {% for pokemon in player.pokemons %}
                 {% if pokemon.position == "box" %}
                   <div class="row shadow mb-1" style="background-color: lightblue;">
                     <!-- Pokemon Name and Typing -->
@@ -291,7 +281,7 @@
                             {% if player.party_length() < 6 %}
                               <option value="addparty">Add to Party</option>
                             {% endif %}
-                            {% for party_pokemon in player.pokemon_caught %}
+                            {% for party_pokemon in player.pokemons %}
                               {% if party_pokemon.position == "party" %}
                                 <option value="{{ party_pokemon.id }}">{{ party_pokemon.pokedex_info.species }}</option>
                               {% endif %}
@@ -307,10 +297,10 @@
                           <select class="form-select" id="inputGroupSelect03" aria-label="Example select with button addon" name="variant_select">
                             <option selected disabled>Sprite Variants</option>
                             {% for sprite in pokemon.pokedex_info.sprites %}
-                              {% if sprite.variant_let == '' %}
+                              {% if sprite.variant == '' %}
                                 <option value="default">Default</option>
                               {% else %}
-                                <option value="{{ sprite.variant_let }}">{{ sprite.variant_let.upper() }}</option>
+                                <option value="{{ sprite.variant }}">{{ sprite.variant.upper() }}</option>
                               {% endif %}
                             {% endfor %}
                           </select>
@@ -331,7 +321,7 @@
                                 <option selected disabled>Link with ...</option>
                                 {% for other_player in save.players %}
                                   {% if other_player != player %}
-                                    {% for other_pokemon in other_player.pokemon_caught %}
+                                    {% for other_pokemon in other_player.pokemons %}
                                       {% if not other_pokemon.soul_linked %}
                                         <option value="{{ other_pokemon.id }}">{{ other_pokemon.pokedex_info.species }} ({{ other_pokemon.player_info.player_name }})</option>
                                       {% elif not player in other_pokemon.soul_linked.linked_players() %}
@@ -368,18 +358,8 @@
                     <!-- Right Side -->
                     <!-- Sprite -->
                     <div class="col-md-6">
-                      {% if not pokemon.sprite %}
-                        {% if pokemon.pokedex_info.head_pokemon %}
-                          <div><img class="mx-auto d-block" src="{{ url_for('main.static', filename='images/sprites/' ~ pokemon.pokedex_info.head_pokemon.pokedex_number ~ '/' ~ pokemon.pokedex_info.pokedex_number ~ '.png') }}" onerror="this.onerror=null; this.src='/main/static/images/sprites/default/default.png'" width="150" height="150"></div>
-                          artists: japeal
-                        {% else %}
-                          <div><img class="mx-auto d-block" src="{{ url_for('main.static', filename='images/sprites/' ~ pokemon.pokedex_info.pokedex_number ~ '/' ~ pokemon.pokedex_info.pokedex_number ~ '.png') }}" onerror="this.onerror=null; this.src='/main/static/images/sprites/default/default.png'" width="150" height="150"></div>
-                          artists: japeal
-                        {% endif %}
-                      {% else %}
-                        <div><img class="mx-auto d-block" src="{{ url_for('main.static', filename='images/sprites/' ~ pokemon.sprite.sprite_code() ~ '.png') }}" onerror="this.onerror=null; this.src='/main/static/images/sprites/default/default.png'" width="150" height="150"></div>
-                        artist: {{ pokemon.sprite.artists.name }}
-                      {% endif %}
+                      <div><img class="mx-auto d-block" src="{{ url_for('main.static', filename='images/sprites/' ~ pokemon.sprite_info.sprite_group() ~ '/' ~ pokemon.sprite_info.sprite_code() ~ '.png') }}" onerror="this.onerror=null; this.src='/main/static/images/sprites/default/default.png'" width="150" height="150"></div>
+                      artist: {{ pokemon.sprite_info.artist_info.artist_name }}
                     </div>
                     <a style="text-align: center;" target ="_blank" rel="noopener noreferrer" href="https://if.daena.me/{{ pokemon.pokedex_info.pokedex_number }}/">More info on FusionDex</a>
                   </div>
@@ -404,7 +384,7 @@
           {% for player in save.players %}
             <div class="col-lg-{{ column_widths['player_column'] }}">
               <h2 style="text-align:center">{{ player.player_name }}</h2>
-              {% for pokemon in player.pokemon_caught %}
+              {% for pokemon in player.pokemons %}
                 {% if pokemon.position == "dead" %}
                   <div class="row shadow mb-1" style="background-color: lightblue;">
                     <h4 style="text-align: center;">
@@ -445,22 +425,9 @@
                     <!-- Sprite -->
                     <div class="col-md-6">
                       <div>
-                        {% if not pokemon.sprite %}
-                          {% if pokemon.pokedex_info.head_pokemon %}
-                            <div><img class="mx-auto d-block" src="{{ url_for('main.static', filename='images/sprites/' ~ pokemon.pokedex_info.head_pokemon.pokedex_number ~ '/' ~ pokemon.pokedex_info.pokedex_number ~ '.png') }}" onerror="this.onerror=null; this.src='/main/static/images/sprites/default/default.png'" width="150" height="150"></div>
-                            artists: japeal
-                          {% else %}
-                            <div><img class="mx-auto d-block" src="{{ url_for('main.static', filename='images/sprites/' ~ pokemon.pokedex_info.pokedex_number ~ '/' ~ pokemon.pokedex_info.pokedex_number ~ '.png') }}" onerror="this.onerror=null; this.src='/main/static/images/sprites/default/default.png'" width="150" height="150"></div>
-                            artists: japeal
-                          {% endif %}
-                        {% else %}
-                          <div><img class="mx-auto d-block" src="{{ url_for('main.static', filename='images/sprites/' ~ pokemon.sprite.sprite_code() ~ '.png') }}" onerror="this.onerror=null; this.src='/main/static/images/sprites/default/default.png'" width="150" height="150"></div>
-                          artist: {{ pokemon.sprite.artists.name }}
-                        {% endif %}
+                        <div><img class="mx-auto d-block" src="{{ url_for('main.static', filename='images/sprites/' ~ pokemon.sprite_info.sprite_group() ~ '/' ~ pokemon.sprite_info.sprite_code() ~ '.png') }}" onerror="this.onerror=null; this.src='/main/static/images/sprites/default/default.png'" width="150" height="150"></div>
+                        artist: {{ pokemon.sprite_info.artist_info.artist_name }}
                       </div>
-                      <!-- <div>
-                        artist: {{ pokemon.sprite.artists }}
-                      </div> -->
                     </div>
                   </div>
                 {% endif %}

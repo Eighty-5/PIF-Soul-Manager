@@ -2,12 +2,8 @@ from collections import Counter
 from ...extensions import db
 from flask import Blueprint, request, flash, redirect, url_for
 from flask_login import login_required, current_user
-from ...models import User, Save, Player, Pokemon, Pokedex, Sprite, Route, RouteList, SoulLink
-from .pokemon_utils import (
-    create_fusion_pokemon, 
-    get_new_link_id, get_pokemon, get_current_save, get_new_link_number, 
-    pokemon_check, pokemon_verification
-)    
+from ...models import *
+from .pokemon_utils import create_fusion_pokemon, flash_success_switch, pokemon_verification
 from sqlalchemy import or_, func
 # from ...utils import get_default_vars
 
@@ -40,6 +36,7 @@ def add_pokemon():
                     soul_linked=linkage,
                     route_caught=route
                 )
+                new_pokemon.set_default_sprite()
             else:
                 flash(f"{species} does not exist in the current Pokedex")
                 return False
@@ -120,14 +117,14 @@ def add_random():
     if ruleset != MANUAL_RULESET:
         complete_routes = []
         incomplete_routes = []
-        if len(current_save.recorded_routes) > 0:
-            routes_dict = {route.route_info.name:route for route in current_save.recorded_routes}
+        if len(current_save.routes) > 0:
+            routes_dict = {route.route_info.route_name:route for route in current_save.routes}
             while True:
                 rand_route = db.session.scalar(db.select(RouteList).order_by(func.random()).limit(1))
                 print(rand_route)
-                if rand_route.name in routes_dict:
-                    if ruleset in TWO_ROUTE_RULESET and routes_dict[rand_route.name].complete != True:
-                        route = routes_dict[rand_route.name]
+                if rand_route.route_name in routes_dict:
+                    if ruleset in TWO_ROUTE_RULESET and routes_dict[rand_route.route_name].complete != True:
+                        route = routes_dict[rand_route.route_name]
                         route.complete = True
                         if ruleset in ONE_ROUTE_RULESET:
                             complete = True
@@ -192,7 +189,7 @@ def change_variant(id):
     )
     new_variant = db.session.scalar(
         db.select(Sprite).join(Sprite.info).where(
-            Pokedex.number==variant_to_change.info.number, Sprite.variant_let==variant
+            Pokedex.number==variant_to_change.info.number, Sprite.variant==variant
         )
     )
     if new_variant:
@@ -253,7 +250,7 @@ def fuse_pokemon():
         else:
             body_pokemons.append(body_pokemon)
 
-    linkage = SoulLink(save_info=current_save, soul_link_number=get_new_link_number(current_save))
+    linkage = SoulLink(save_info=current_save, soul_link_number=current_save.get_new_link_number())
     
     if ruleset in AUTO_RULESET:
         link_1, link_2 = False, False
@@ -369,19 +366,24 @@ def evolve_pokemon(id):
 def switch_party(id):
     current_save = current_user.current_save()
     pokemon_to_party = pokemon_verification(id, current_save)
+    
     if not pokemon_to_party:
         flash(f"ERROR: Add to Party Failed - Please select a valid pokemon")
         return redirect(url_for('main.view_save'))
     value = request.form['switch_with']
     if value != "addparty":
         pokemon_to_box = pokemon_verification(int(value), current_save)
-        if pokemon_to_box:
-            pokemon_to_box.switch_position(position="box")
-        else:
+        if not pokemon_to_box:
             flash(f"ERROR: Add to Party Failed - Please select a valid pokemon")
-    pokemon_to_party.switch_position(position="party")
-    
-
+            return redirect(url_for('main.view_save'))
+    else:
+        pokemon_to_box = None
+    success = pokemon_to_party.switch_position(other=pokemon_to_box, self_position="party")
+    if success:
+        flash_success_switch(pokemon_to_party)
+        flash_success_switch(pokemon_to_box)
+    else:
+        flash("Party is full")
     return redirect(url_for('main.view_save'))
 
 
@@ -393,14 +395,20 @@ def switch_box(id):
     if not pokemon_to_box:
         flash(f"ERROR: Send to Box Failed - Please select a valid pokemon")
         return redirect(url_for('main.view_save'))
-    pokemon_to_box.switch_position(position="box")
     value = request.form['switch_with']
     if value != "sendbox":
         pokemon_to_party = pokemon_verification(int(value), current_save)
         if not pokemon_to_party:
             flash(f"ERROR: Send to Box Failed - Please select a valid pokemon")
             return redirect(url_for('main.view_save'))
-        pokemon_to_party.switch_position(position="party")
+    else:
+        pokemon_to_party = None
+    success = pokemon_to_box.switch_position(pokemon_to_party, self_position="box")
+    if success:
+        flash_success_switch(pokemon_to_party)
+        flash_success_switch(pokemon_to_box)
+    else:
+        flash("Party is full")
     return redirect(url_for('main.view_save'))
 
 
@@ -411,7 +419,9 @@ def switch_dead(id):
     pokemon_to_graveyard = pokemon_verification(id, current_save)
     if not pokemon_to_graveyard:
         flash(f"ERROR: Fainting Failed - Please select a valid pokemon")
-    pokemon_to_graveyard.switch_position(position="dead")
+    success = pokemon_to_graveyard.switch_position(self_position="dead")
+    if success:
+        flash_success_switch(pokemon_to_graveyard)
     return redirect(url_for('main.view_save'))
 
 
@@ -422,7 +432,9 @@ def switch_revive(id):
     pokemon_to_box = pokemon_verification(id, current_save)
     if not pokemon_to_box:
         flash(f"ERROR: Revive Failed - Please select a valid pokemon")
-    pokemon_to_box.switch_position(position="box")
+    success = pokemon_to_box.switch_position(self_position="box")
+    if success:
+        flash_success_switch(pokemon_to_box)
     return redirect(url_for('main.view_save'))
 
 

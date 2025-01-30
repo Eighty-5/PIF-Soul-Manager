@@ -3,6 +3,18 @@ from flask import flash, request, redirect, url_for
 from ...models import Player, Pokedex, Pokemon, Save, SoulLink
 
 
+def flash_success_switch(pokemon_switched):
+    if not pokemon_switched:
+        return False
+    if pokemon_switched.soul_linked:
+        flash(
+            f"{', '.join([pokemon.pokedex_info.species for pokemon in pokemon_switched.soul_linked.linked_pokemon])}"
+            f" switched position to {pokemon_switched.position.title()}"
+        )
+    else:
+        flash(f"{pokemon_switched.pokedex_info.species} switched position to {pokemon_switched.position.title()}")
+
+
 def pokemon_verification(pokemon_id, save_file):
     pokemon_to_check = db.session.get(Pokemon, pokemon_id)
     if not pokemon_to_check or pokemon_to_check.player_info.save_info != save_file:
@@ -52,27 +64,6 @@ def add_pokemon_per_ruleset_group(ruleset_group, player_num, species, linkage, r
     db.session.add(pokemon_to_add)
 
 
-# def create_fusion_pokemon(new_link_id, head_link_ids, body_link_ids, current_save):
-#     for head_link_id, body_link_id, player in zip(head_link_ids, body_link_ids, current_save.players):
-#         if current_save.ruleset == 1:
-#             new_link_id == get_new_link_id(current_save.id)
-#         head_pokemon = db.session.scalar(db.select(Pokemon).where(Pokemon.player==player, Pokemon.link_id==head_link_id))
-#         body_pokemon = db.session.scalar(db.select(Pokemon).where(Pokemon.player==player, Pokemon.link_id==body_link_id))
-#         fused_pokemon = db.session.scalar(db.select(Pokedex).where(Pokedex.head==head_pokemon.info, Pokedex.body==body_pokemon.info))
-#         pokemon_to_add = Pokemon(
-#             link_id = new_link_id,
-#             linked=True,
-#             position='box',
-#             player=player,
-#             info=fused_pokemon,
-#             sprite=fused_pokemon.sprites[0])
-#         db.session.add(pokemon_to_add)
-#         db.session.delete(head_pokemon)
-#         db.session.delete(body_pokemon)
-#     flash("Pokemon fused successfully")
-#     db.session.commit()
-
-
 def create_fusion_pokemon(linkage, head_pokemon, body_pokemon, current_save):
     fused_pokedex_info = db.session.scalar(db.select(Pokedex).where(Pokedex.head_pokemon==head_pokemon.pokedex_info, Pokedex.body_pokemon==body_pokemon.pokedex_info))
     pokemon_to_add = Pokemon(
@@ -81,6 +72,7 @@ def create_fusion_pokemon(linkage, head_pokemon, body_pokemon, current_save):
         pokedex_info = fused_pokedex_info,
         soul_linked = linkage
     )
+    pokemon_to_add.set_default_sprite()
     db.session.add(pokemon_to_add)
     db.session.delete(head_pokemon)
     db.session.delete(body_pokemon)

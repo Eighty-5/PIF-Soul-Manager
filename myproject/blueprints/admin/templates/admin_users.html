@@ -19,7 +19,7 @@
             <td>{{ user.id }}. </td>
             <td>{{ user.username }}</td>
             <td>{{ user.saves }}</td>
-            <td>{{ user.current_save().save_number }}</td>
+            <td>{{ user.current_save().slot }}</td>
             <td>{{ user.hash }}</td>
             <td>{{ user.last_login }}</td>
             <td><a href="{{ url_for('manage_users.delete_user',id=user.id) }}">Delete</a></td>

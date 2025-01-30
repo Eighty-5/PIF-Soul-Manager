@@ -20,7 +20,7 @@
         <tr>
             <td>Save Id: {{ save.id }}</td>
             <td>Save User: {{ save.user_id }}</td>
-            <td>Save Number: {{ save.save_number }}</td>
+            <td>Save Number: {{ save.slot }}</td>
             <td>{% for player in save.players %}
                 Player {{ player.player_num }}: {{ player.player_name }}<br>
             {% endfor %}</td>

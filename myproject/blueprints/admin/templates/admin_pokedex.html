@@ -36,21 +36,21 @@
         <td class="Title">Family Order</td>
         <td class="Title">Sprite Variants</td>
     </tr> 
-    {% for pokemon in search_results %}
+    {% for pokedex_entry in search_results %}
         <tr>
-            <td>{{ pokemon.id }} </td>
-            <td>{{ pokemon.number }} </td>
-            <td>{{ pokemon.species }}</td>
-            <td>{{ pokemon.head.species }}</td>
-            <td>{{ pokemon.body.species }}</td>
-            <td>{{ pokemon.type_primary }}</td>
-            <td>{{ pokemon.type_secondary }}</td>
-            <td>{{ pokemon.family }}</td>
-            <td>{{ pokemon.family_order }}</td>
+            <td>{{ pokedex_entry.id }} </td>
+            <td>{{ pokedex_entry.number }} </td>
+            <td>{{ pokedex_entry.species }}</td>
+            <td>{{ pokedex_entry.head.species }}</td>
+            <td>{{ pokedex_entry.body.species }}</td>
+            <td>{{ pokedex_entry.type_primary }}</td>
+            <td>{{ pokedex_entry.type_secondary }}</td>
+            <td>{{ pokedex_entry.family }}</td>
+            <td>{{ pokedex_entry.family_order }}</td>
             <td>
-              {% for sprite in pokemon.sprites %}
-                {% if not sprite.variant_let == '' %}
-                  {{ sprite.variant_let }},
+              {% for sprite in pokedex_entry.sprites %}
+                {% if not sprite.variant == '' %}
+                  {{ sprite.variant }},
                 {% endif %} 
               {% endfor %}
             </td>
