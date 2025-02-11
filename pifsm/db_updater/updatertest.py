@@ -671,7 +671,7 @@ def backup_database(db_type):
     db_backup_path = f"{os.getenv('DB_BACKUP_PATH')}{db_backup_filename}"
 
     if db_type == 'sqlite':
-        src = "D:/Projects/PIF-Game-Manager/instance/pifsm.db"
+        src = os.getenv('SQLITE_DB_PATH')
         dst = db_backup_path
         shutil.copyfile(src, dst)
     elif db_type == 'mysql':
