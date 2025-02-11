@@ -12,19 +12,13 @@ from pifsm import create_app
 from sqlalchemy import or_, event
 from itertools import chain
 import time
+from pifsm.decorators import func_timer
+from pifsm.models import *
+
 
 app = create_app()
 
 # Path Variables
-BASE_DEX_CSV_PATH = 'assets/pokedex_stuff/pokedexes/if-base-dex.csv'
-SPRITES_CREDITS_PATH = 'pokedex_stuff/sprite_credits/Sprite Credits.csv'
-ROUTES_LIST_PATH = 'pokedex_stuff/routes.csv'
-POKEDEX_HTML_PATH = 'pifsm/main/templates/pokemon_list.html'
-
-REMOVED_DEX_CSV_PATH = 'assets/pokedex_stuff/pokedexes/removed-dex.csv'
-POKEDEX_UPDATES_PATH = 'pokedex_stuff/logs/pokedex_updates/'
-ARTISTS_UPDATES_PATH = 'pokedex_stuff/logs/artists_updates/'
-SPRITES_UPDATES_PATH = 'pokedex_stuff/logs/sprites_updates/'
 
 # Constants
 TMP_NUM = '000'
@@ -59,10 +53,12 @@ def main(*args, **kwargs) -> None:
 
 @func_timer
 def update_pokedex(initial_upload):
-
+    family_dict = {}
     new_dex, new_dex_stats, new_dex_nums, new_familys = {}, {}, {}, {}
     dupes = []
-    with (open(BASE_DEX_CSV_PATH, newline='') as dexfile, open(REMOVED_DEX_CSV_PATH, newline='') as rdexfile):
+    base_dex_path = os.getenv('BASE_DEX_CSV_PATH')
+    removed_dex_path = os.getenv('REMOVED_DEX_CSV_PATH')
+    with (open(base_dex_path, newline='') as dexfile, open(removed_dex_path, newline='') as rdexfile):
         both_dexes = chain(csv.DictReader(rdexfile), csv.DictReader(dexfile))
         for row in both_dexes:
             pokedex_number, species = row['pokedex_number'], row['species']
@@ -72,17 +68,17 @@ def update_pokedex(initial_upload):
             if pokedex_number in new_dex_nums:
                 dupes.append(({'pokedex_number':pokedex_number, 'species':species}, 
                               {'pokedex_number':pokedex_number,'species':new_dex_nums[pokedex_number]}))
-            stats_object = BasePokedexStats(
+            stats_object = PokedexStats(
                 hp=int(row['hp']), attack=int(row['attack']), defense=int(row['defense']), 
                 sp_attack=int(row['sp_attack']), sp_defense=int(row['sp_defense']), speed=int(row['speed']))
             if not row['family_number'] in family_dict:
-                family_object = BaseFamily(
+                family_object = Family(
                     family_number=row['family_number']
                 )
                 family_dict[row['family_number']] = family_object
             else:
                 family_object = family_dict[row['family_number']]
-            dex_object = BasePokedex(
+            dex_object = Pokedex(
                 pokedex_number=pokedex_number, species=species, type_primary=row['type_primary'], type_secondary=row['type_secondary'], 
                 family=family_object, family_order=row['family_order'], 
                 name_head=row['name_head'], name_body=row['name_body'], stats=stats_object)
@@ -139,7 +135,8 @@ def update_sprites_test(initial_upload):
     artists_to_add = []
     if not 'japeal' in artists:
         artists_to_add.append(Artist(name='japeal'))
-    with open(SPRITES_CREDITS_PATH, newline='', errors='ignore') as sprites_file:
+    sprite_credits_path = os.getenv('SPRITES_CREDITS_PATH')
+    with open(sprite_credits_path, newline='', errors='ignore') as sprites_file:
         sprite_reader = csv.DictReader(sprites_file)
         for row in sprite_reader:
             artist_name = row['artist']
@@ -158,7 +155,7 @@ def update_sprites_test(initial_upload):
     new_sprites_dict = {}
     dna_sprites = []
 
-    with open(SPRITES_CREDITS_PATH, newline='', errors='ignore') as sprites_file:
+    with open(spirte_credits_path, newline='', errors='ignore') as sprites_file:
         sprite_reader = csv.DictReader(sprites_file)
         for sprite in sprite_reader:
             sprite_code = sprite['sprite']
@@ -195,7 +192,7 @@ def update_sprites_test(initial_upload):
         
     db.session.commit()
 
-    with open(f"{SPRITES_UPDATES_PATH}{start_time}_error_logs.txt", 'w') as error_log:
+    with open(f"{sprite_credits_path}{start_time}_error_logs.txt", 'w') as error_log:
         for err in dna_sprites:
             for key, value in err.items():
                 error_log.write(f"{key}:{value}, ")
@@ -446,6 +443,7 @@ def bulk_change_pokemon(dex_changes, commit=False) -> None:
 
 @func_timer
 def bulk_remove_pokemon(dex_removals, commit=False):
+    removed_dex_path = os.getenv('REMOVED_DEX_CSV_PATH')
     with open(REMOVED_DEX_CSV_PATH, 'a') as removeddex:
         for pokemon_to_remove in dex_removals:
             pokemon = pokemon_to_remove['obj']
@@ -479,7 +477,7 @@ def create_pokedex_html():
     while count <= len(base_pokedex):
         pokedex_lst.append(base_pokedex[count])
         count += 1
-
+    pokedex_html_path = os.getenv('POKEDEX_HTML_PATH')
     with open(POKEDEX_HTML_PATH, 'w') as pokedex_html_file:
         pokedex_html_file.write('<datalist id="pokedex">\n')
         for pokemon in pokedex_lst:
@@ -678,12 +676,6 @@ def backup_database(db_type):
         shutil.copyfile(src, dst)
     elif db_type == 'mysql':
         subprocess.run(f"mysqldump -u root -p {os.getenv('DB_NAME')} > {db_backup_path}", shell=True)
-
-
-@event.listens_for(Pokedex, 'before_update')
-def receive_before_update(mapper, connection, target):
-    if target.head_id is None:
-        print(target)
 
 
 

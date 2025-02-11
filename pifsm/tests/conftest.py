@@ -2,7 +2,6 @@ import pytest
 import logging
 
 from pifsm import create_app, db as db
-from .factories import UserFactory
 
 @pytest.fixture()
 def app():
@@ -18,8 +17,8 @@ def client(app):
     return app.test_client()
 
 
-@pytest.fixture
-def user(db):
-    user = UserFactory(password="password")
-    db.session.commit()
-    return user
+# @pytest.fixture
+# def user(db):
+#     user = UserFactory(password="password")
+#     db.session.commit()
+#     return user

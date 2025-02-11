@@ -1,0 +1,38 @@
+.vscode/
+.pytest_cache/
+__pycache__/
+
+# Database Backups
+db_backups/
+migrations/
+
+# Virtual Environments
+venv/
+
+# Configuration
+.env
+
+# Developer DB
+instance/
+
+# All sprite images
+pifsm/main/static/images/sprites/* 
+
+# Pokedexes, Sprites, Routes
+assets/
+
+# Dev Stuff
+dev_stuff/
+
+# Test HTMLs
+pifsm/main/templates/test_list.HTMLs
+pifsm/main/templates/testing.html
+
+# Updater Logs
+db_updater/logs/functions.log
+
+!*.gitkeep
+privacy_policy.txt
+
+
+

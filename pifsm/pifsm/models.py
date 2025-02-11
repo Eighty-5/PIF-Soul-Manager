@@ -248,8 +248,8 @@ class Pokedex(CRUDMixin, db.Model):
     type_secondary: Mapped[Optional[str]] = mapped_column(String(10))
     family_id: Mapped[Optional[int]] = mapped_column(ForeignKey("family.id"))
     family_order: Mapped[str] = mapped_column(String(10))
-    name_1: Mapped[Optional[str]] = mapped_column(String(20))
-    name_2: Mapped[Optional[str]] = mapped_column(String(20))
+    name_head: Mapped[Optional[str]] = mapped_column(String(20))
+    name_body: Mapped[Optional[str]] = mapped_column(String(20))
 
     head_pokemon: Mapped["Pokedex"] = relationship(back_populates="fusions_head", remote_side=[id], foreign_keys=[head_id])
     body_pokemon: Mapped["Pokedex"] = relationship(back_populates="fusions_body", remote_side=[id], foreign_keys=[body_id])
@@ -307,7 +307,7 @@ class Pokedex(CRUDMixin, db.Model):
             return (f"Pokedex(id={self.id!r}, pokedex_number={self.pokedex_number!r}, species={self.species!r}, "
                     f"type_primary={self.type_primary!r}, type_secondary={self.type_secondary!r}, "
                     f"family={self.family.family_number!r}, family_order={self.family_order!r}, "
-                    f"name_1={self.name_1}, name_2={self.name_2})"
+                    f"name_head={self.name_head}, name_body={self.name_body})"
                     )
 
 
