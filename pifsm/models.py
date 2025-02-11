@@ -368,7 +368,7 @@ class Sprite(db.Model):
     artist_id: Mapped[int] = mapped_column(ForeignKey("artist.id"))
 
     artist_info: Mapped["Artist"] = relationship(back_populates="sprites")
-    pokedex_info: Mapped["BasePokedex"] = relationship(back_populates="sprites")
+    pokedex_info: Mapped["Pokedex"] = relationship(back_populates="sprites")
 
     def sprite_group(self):
         if self.pokedex_info.head_pokemon:

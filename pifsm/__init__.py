@@ -10,17 +10,13 @@ from .models import User
 from dotenv import load_dotenv
 from flask_migrate import Migrate
 
-
 from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy import select
 
 import os
-import jinja2
 import logging
 
 # Load env variables
 load_dotenv()
-database_uri = os.getenv('SQLALCHEMY_DATABASE_URI')
 
 def create_app(config_object="pifsm.settings"):
     
@@ -34,10 +30,6 @@ def create_app(config_object="pifsm.settings"):
     # Flask Login Stuff
     register_blueprints(app)
     register_extensions(app) 
-
-
-
-       
 
     return app
 
