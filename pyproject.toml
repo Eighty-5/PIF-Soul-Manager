@@ -1,0 +1,15 @@
+[project]
+name = "pifsm"
+version = "0.4.1"
+description = "Pokemon Infinite Fusion Save Manager"
+dependencies = [
+    "flask",
+]
+
+[build-system]
+requires = ["flit_core<4"]
+build-backend = "flit_core.buildapi"
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "--ignore pifsm/main/static"

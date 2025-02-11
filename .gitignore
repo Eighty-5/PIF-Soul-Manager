@@ -1,41 +1,38 @@
-db_backups/
-venv/
+.vscode/
+.pytest_cache/
 __pycache__/
-.env
-old_scripts.py
-tasks.txt
+
+# Database Backups
+db_backups/
 migrations/
-instance/pifsm.db
-myproject/blueprints/main/static/images/sprites/* 
-pokedex_stuff/if-pokedex.csv
-pokedex_stuff/dna_sprites.txt
-pokedex_stuff/pokedex.txt
-pokedex_stuff/sprite-credits.csv
-pokedex_stuff/temp-sprite-credits.csv
-pokedex_stuff/move-stats.py
-pokedex_stuff/pokedexes/stats_new.csv
-pokedex_stuff/pokedexes/stats.txt
-pokedex_stuff/temp-stats.csv
-update_pokedex_test.py
-sprites_to_upload/
-test/
-locations.txt
-rulesets.txt
-bugs_list.txt
-pokedex_stuff/logs/artists_updates/*
-pokedex_stuff/logs/pokedex_updates/*
-pokedex_stuff/logs/sprites_updates/*
-pokedex_stuff/sprite_credits/*
-Deleted Code.txt
+
+# Virtual Environments
+venv/
+
+# Configuration
+.env
+
+# Developer DB
+instance/
+
+# All sprite images
+pifsm/main/static/images/sprites/* 
+
+# Pokedexes, Sprites, Routes
+assets/
+
+# Dev Stuff
+dev_stuff/
+
+# Test HTMLs
+pifsm/main/templates/test_list.HTMLs
+pifsm/main/templates/testing.html
+
+# Updater Logs
+db_updater/logs/functions.log
+
 !*.gitkeep
-updater_old_functions.py
-functions.log
-
-
-
-
 privacy_policy.txt
-about.txt
 
 
 
