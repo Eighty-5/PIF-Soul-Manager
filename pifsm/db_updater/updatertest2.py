@@ -3,7 +3,6 @@ import os
 import sys
 import shutil
 import subprocess
-from natsort import natsorted
 import string
 from typing import Type
 
@@ -17,8 +16,16 @@ from pifsm.decorators import func_timer
 from pifsm.models import *
 
 from database_utils import (
-    new_pokedex_from_files,
-    create_pokedex_html
+    create_pokedex_html,
+    read_pokedex_csv,
+    backup_database,
+    sanitized_input,
+    create_family_instances,
+    create_fusion_species,
+    create_fusion_stats,
+    create_fusion_typing,
+    create_fusion,
+    convert_pokedex
 )
 
 
@@ -43,18 +50,17 @@ load_dotenv()
 
 def main(*args, **kwargs) -> None:
 
-    backup_database('sqlite')
+    # backup_database('sqlite')
 
     with app.app_context():
-        initial_upload = False
         if 'pokedex' in sys.argv:
-            initial_upload = update_pokedex()
+            update_pokedex()
         if 'sprites' in sys.argv:
-            update_sprites_test(initial_upload)
+            update_sprites_test()
         if 'upload_sprites' in sys.argv:
             upload_sprites()
         if 'routes' in sys.argv:
-            update_routes_list()
+            update_routes_list(routes_html_path=os.getenv('ROUTES_HTML_PATH'))
         print("Update Complete!")
 
 
@@ -62,44 +68,34 @@ def main(*args, **kwargs) -> None:
 
 @func_timer
 def update_pokedex():
-    initial_upload = False
-    new_dex, duplicates = new_pokedex_from_files(
-        os.getenv('BASE_DEX_CSV_PATH'), os.getenv('REMOVED_DEX_CSV_PATH')
+    new_dex = read_pokedex_csv(
+        dict_key='species',
+        base_pokedex_path=os.getenv('BASE_DEX_CSV_PATH_TEST'), 
+        removed_pokedex_path=os.getenv('REMOVED_DEX_CSV_PATH')
     )
-    if duplicates:
-        print(*duplicates, sep='\n')
-        quit()
-    
+    new_dex = convert_pokedex(pokedex=new_dex, session_add=False)
     old_dex = get_pokedex(pokedex_type='base', dict_key='species')
-    if not old_dex:
-        initial_upload = True
-        print("Initial Pokedex Upload")
 
     dex_deletions, dex_changes, dex_additions = compare_pokedexes(old_dex, new_dex)
 
     # Dont print any changes on initial upload to avoid screen clutter
-    if not initial_upload:
-        print_changes(dex_additions, dex_deletions, dex_changes)
-    else:
-        print(f"Inserting initial {len(dex_additions)} Pokemon")
-
-    # return None
+    print_changes(dex_additions, dex_deletions, dex_changes)
 
     prompt_continue()
 
     # Order required: Deletions -> Changes -> Additions
-    bulk_delete_pokemon(dex_deletions)
+    delete_pokemon_from_db(dex_deletions)
     dex_removals = []
     for number_change in dex_changes['pokedex_number']:
         if 'r' in number_change['new']:
             dex_removals.append(number_change)
-    bulk_remove_pokemon(dex_removals)
+    pokemon_to_removed_csv(dex_removals)
     bulk_change_pokemon(dex_changes)
     bulk_add_pokemon(dex_additions)
     prompt_continue()
     db.session.commit()
 
-    create_pokedex_html()
+    create_pokedex_html(pokedex_html_path=os.getenv('POKEDEX_HTML_PATH'))
 
 
 def print_changes(dex_additions, dex_deletions, changes_dict):
@@ -226,12 +222,12 @@ def upload_sprites() -> None:
 
 
 @func_timer
-def update_routes_list():
-    routes_html_path = os.getenv('ROUTES_HTML_PATH')
+def update_routes_list(routes_html_path: str) -> None:
+    from natsort import natsorted
     new_routes_lst = []
     old_routes_lst = {route.route_name:'' for route in db.session.scalars(db.select(RouteList))}
-
-    with open(ROUTES_LIST_PATH, newline='', errors='ignore') as routes_file:
+    routes_list_path = os.getenv('ROUTES_LIST_PATH')
+    with open(routes_list_path, newline='', errors='ignore') as routes_file:
         reader = csv.DictReader(routes_file)
         for row in reader:
             route_name = row['route']
@@ -312,11 +308,9 @@ def compare_pokedex_entries(entry_old, entry_new):
     """Compares two pokedex entries and returns any changes"""
     changes = {}
     for attr in POKEDEX_ATTR_ALL:
-        if attr == 'family_number' and not entry_old.family.__eq__(entry_new.family, attr):
-            new_family = entry_new.family
-            entry_new.family.evolutions = []
+        if attr == 'family_number' and not entry_old.family.family_number==entry_new.family_number:
             changes[attr] = create_update_dict(
-                entry_old.family, new_family, entry_old
+                entry_old.family.family_number, entry_new.family_number, entry_old
             )
         elif attr in STATS_LIST and not entry_old.stats.__eq__(entry_new.stats, attr):
             changes[attr] = create_update_dict(getattr(entry_old.stats, attr), getattr(entry_new.stats, attr), entry_old)
@@ -383,36 +377,53 @@ def compare_pokedexes(old_dex, new_dex):
 @func_timer
 def bulk_add_pokemon(dex_additions: list, commit=False):
     """Adds all new pokemon to the pokedex, including any fusions that would be created from the new pokemon""" 
+    # family_dict = {family.family_number:family for family in db.session.scalars(db.select(Family))}
+    # old_dex = get_pokedex('base', 'species')
+    # japeal = db.session.scalar(db.select(Artist).where(Artist.artist_name=='japeal'))
+    # bulk_additions = []
+    # for pokemon_1 in dex_additions:
+    #     default_sprite = Sprite(
+    #         variant='',
+    #         artist_info=japeal,
+    #         pokedex_info=pokemon_1
+    #     )
+    #     new_fusion, family_dict = create_fusion(pokemon_1, pokemon_1, japeal, family_dict) 
+    #     bulk_additions.append(new_fusion)
+    #     for pokemon_2 in old_dex.values():
+    #         new_fusion, family_dict = create_fusion(pokemon_1, pokemon_2, japeal, family_dict)
+    #         bulk_additions.append(new_fusion)
+    #         new_fusion, family_dict = create_fusion(pokemon_2, pokemon_1, japeal, family_dict)
+    #         bulk_additions.append(new_fusion)
+    #     for pokemon_2 in dex_additions:
+    #         if pokemon_1 != pokemon_2:
+    #             new_fusion, family_dict = create_fusion(pokemon_1, pokemon_2, japeal, family_dict)
+    #             bulk_additions.append(new_fusion)
+    # db.session.add_all(bulk_additions)
+    # if commit:
+    #     db.session.commit()
+
+    """Adds all new pokemon to the pokedex, including any fusions that would be created from the new pokemon""" 
     family_dict = {family.family_number:family for family in db.session.scalars(db.select(Family))}
     old_dex = get_pokedex('base', 'species')
     japeal = db.session.scalar(db.select(Artist).where(Artist.artist_name=='japeal'))
-    bulk_additions = []
-    if not japeal:
-        japeal = Artist(
-            artist_name='japeal'
-        )
-        db.session.add(japeal)
+    bulk_additions = {}
     for pokemon_1 in dex_additions:
-        default_sprite = Sprite(
-            variant='',
-            artist_info=japeal,
-            pokedex_info=pokemon_1
-        )
-        new_fusion, family_dict = create_fusion(pokemon_1, pokemon_1, japeal, family_dict) 
-        bulk_additions.append(new_fusion)
-        for pokemon_2 in dex_additions:
-            if pokemon_1 != pokemon_2:
-                new_fusion, family_dict = create_fusion(pokemon_1, pokemon_2, japeal, family_dict)
-                bulk_additions.append(new_fusion)
         for pokemon_2 in old_dex.values():
-            new_fusion, family_dict = create_fusion(pokemon_1, pokemon_2, japeal, family_dict)
-            bulk_additions.append(new_fusion)
-            new_fusion, family_dict = create_fusion(pokemon_2, pokemon_1, japeal, family_dict)
-            bulk_additions.append(new_fusion)
-    print(len(family_dict))
-    # for number, family in family_dict.items():
-    #     print(f"{number}: {family}")
-    db.session.add_all(bulk_additions)
+            pokemon_2.family_number = pokemon_2.family.family_number
+            new_fusion = create_fusion(pokemon_1, pokemon_2, japeal)
+            bulk_additions[new_fusion.pokedex_number] = new_fusion
+            # db.session.add(new_fusion)
+            new_fusion = create_fusion(pokemon_2, pokemon_1, japeal)
+            bulk_additions[new_fusion.pokedex_number] = new_fusion
+            # db.session.add(new_fusion)
+        for pokemon_2 in dex_additions:
+            new_fusion = create_fusion(pokemon_1, pokemon_2, japeal)
+            bulk_additions[new_fusion.pokedex_number] = new_fusion
+            # db.session.add(new_fusion)
+    
+    family_dict = create_family_instances(bulk_additions, family_dict=family_dict)
+    
+    db.session.add_all(bulk_additions.values())
     if commit:
         db.session.commit()
 
@@ -420,7 +431,8 @@ def bulk_add_pokemon(dex_additions: list, commit=False):
 @func_timer
 def bulk_change_pokemon(dex_changes, commit=False) -> None:
     """Makes changes to DB Pokedex based on 'dex_changes' dictionary"""
-    family_dict = {family.family_number:family for family in db.session.scalars(db.select(Family))}
+    if dex_changes['family_number']:
+        family_dict = {family.family_number:family for family in db.session.scalars(db.select(Family))}
     function_dispatcher = {
         'pokedex_number': update_fusion_pokedex_number,
         'species': update_fusion_species,
@@ -428,15 +440,21 @@ def bulk_change_pokemon(dex_changes, commit=False) -> None:
         'type_secondary': update_fusion_typing,
         'family': update_fusion_family,
         'family_order': update_fusion_family_order,
-        'stats': update_fusion_stats
+        'stats': update_fusion_stats,
+        'name_head': update_fusion_species,
+        'name_body': update_fusion_species
     }
     for attr, changes in dex_changes.items():
         for change in changes:
             pokemon_to_update, new_value = change['obj'], change['new']
             if attr == 'family_number':
-                pokemon_to_update.family = new_value
-                family_dict[new_value.family_number] = new_value
-                family_dict = update_fusion_family(pokemon_to_update, family_dict)
+                if not new_value in family_dict:
+                    new_family = Family(
+                        family_number=new_value
+                    )
+                    family_dict[new_value] = new_family
+                pokemon_to_update.family = family_dict[new_value]
+                family_dict = update_fusion_family(base_pokemon=pokemon_to_update, family_dict=family_dict)
             elif attr in STATS_LIST:
                 stat = attr
                 pokemon_to_update.stats.update(commit=False, **{stat:new_value})
@@ -444,14 +462,13 @@ def bulk_change_pokemon(dex_changes, commit=False) -> None:
             elif attr in POKEDEX_ATTR:
                 pokemon_to_update.update(commit=False, **{attr:new_value})
                 function_dispatcher[attr](pokemon_to_update)
-    # Delete any unused family rows
-    delete_result = db.session.execute(db.delete(Family).where(Family.evolutions==None))
+    db.session.execute(db.delete(Family).where(Family.evolutions==None))
     if commit:
         db.session.commit()
 
 
 @func_timer
-def bulk_remove_pokemon(dex_removals: list, commit: bool = False):
+def pokemon_to_removed_csv(dex_removals: list, commit: bool = False):
     """Adds all pokemon in dex_removals list to the 'removed_dex.csv' file"""
     removed_dex_path = os.getenv('REMOVED_DEX_CSV_PATH')
     with open(removed_dex_path, 'a') as removeddex:
@@ -468,7 +485,7 @@ def bulk_remove_pokemon(dex_removals: list, commit: bool = False):
 
 
 @func_timer
-def bulk_delete_pokemon(dex_deletions: list, commit: bool = False):
+def delete_pokemon_from_db(dex_deletions: list, commit: bool = False):
     """Marks pokedex entries for deletion"""
     for pokemon in dex_deletions:
         db.session.delete(pokemon)
@@ -486,27 +503,25 @@ def create_update_dict(old, new, obj):
 
 
 def update_fusion_pokedex_number(base_pokemon: Type[Pokedex], commit: bool = False):
-    
+    """Updates pokedex_number for every fusion that contains base_pokemon."""
     for fusion in base_pokemon.fusions_head + base_pokemon.fusions_body:
-        new_pokedex_number = create_fusion_pokedex_number(fusion.head_pokemon, fusion.body_pokemon)
+        new_pokedex_number = f"{fusion.head_pokemon.pokedex_number}.{fusion.body_pokemon.pokedex_number}"
         fusion.pokedex_number = new_pokedex_number
     if commit:
         db.session.commit()
 
-
-
 def update_fusion_species(base_pokemon: Type[Pokedex], commit: bool = False):
+    """Updates species for every fusion that contains base_pokemon."""
     for fusion in base_pokemon.fusions_head + base_pokemon.fusions_body:
         new_species = create_fusion_species(fusion.head_pokemon, fusion.body_pokemon)
         fusion.species = new_species
     if commit:
         db.session.commit()
 
-
-
 def update_fusion_typing(base_pokemon: Type[Pokedex], commit: bool = False):
+    """Updates type_primary and type_secondary for every fusion that contains base_pokemon."""
     for fusion in base_pokemon.fusions_head + base_pokemon.fusions_body:
-        new_type_primary, new_type_secondary = create_fusion_typing(
+        (new_type_primary, new_type_secondary) = create_fusion_typing(
             fusion.head_pokemon, fusion.body_pokemon
         )
         fusion.type_primary = new_type_primary
@@ -515,67 +530,93 @@ def update_fusion_typing(base_pokemon: Type[Pokedex], commit: bool = False):
         db.session.commit()
 
 
-
-def update_fusion_family(base_pokemon: Type[Pokedex], family_dict: dict, commit: bool = False):
+def update_fusion_family(base_pokemon: Type[Pokedex], family_dict: dict, commit: bool = False) -> dict:
     for fusion in base_pokemon.fusions_head + base_pokemon.fusions_body:
-        (new_family, family_dict) = create_fusion_family(
-            fusion.head_pokemon, fusion.body_pokemon, family_dict
-        )
-        fusion.family = new_family
+        fusion_family_number = f"{fusion.head_pokemon.family.family_number}.{fusion.body_pokemon.family.family_number}"
+        if not fusion_family_number in family_dict:
+            fusion_family = Family(
+                family_number=fusion_family_number
+            )
+            family_dict[fusion_family_number] = fusion_family
+        fusion.family = family_dict[fusion_family_number]
     if commit:
         db.session.commit()
     return family_dict
 
 
-
 def update_fusion_family_order(base_pokemon: Type[Pokedex], commit: bool = False):
+    """Updates family_order for every fusion that contains base_pokemon."""
     for fusion in base_pokemon.fusions_head + base_pokemon.fusions_body:
-        new_family_order = create_fusion_family_order(fusion.head_pokemon, fusion.body_pokemon)
+        new_family_order = f"{fusion.head_pokemon.family_order}.{fusion.body_pokemon.family_order}"
         fusion.family_order = new_family_order
     if commit:
         db.session.commit()
 
-
-
 def update_fusion_stats(base_pokemon: Type[Pokedex], commit: bool = False):
+    """Updates stats for every fusion that contains base_pokemon."""
     for fusion in base_pokemon.fusions_head + base_pokemon.fusions_body:
         new_stats = create_fusion_stats(fusion.head_pokemon, fusion.body_pokemon)
-        fusion.hp = new_stats.hp
-        fusion.attack = new_stats.attack
-        fusion.defense = new_stats.defense
-        fusion.sp_attack = new_stats.sp_attack
-        fusion.sp_defense = new_stats.sp_defense
-        fusion.speed = new_stats.speed
+        fusion.stats.hp = new_stats.hp
+        fusion.stats.attack = new_stats.attack
+        fusion.stats.defense = new_stats.defense
+        fusion.stats.sp_attack = new_stats.sp_attack
+        fusion.stats.sp_defense = new_stats.sp_defense
+        fusion.stats.speed = new_stats.speed
     if commit:
         db.session.commit()
 
-def create_fusion(head_pokemon: Type[Pokedex], body_pokemon: Type[Pokedex], japeal:Type[Artist], family_dict: dict) -> (Type[Pokedex], dict):
-    pokedex_number = create_fusion_pokedex_number(head_pokemon, body_pokemon)
-    type_primary, type_secondary = create_fusion_typing(head_pokemon, body_pokemon)
-    stats = create_fusion_stats(head_pokemon, body_pokemon)
-    species = create_fusion_species(head_pokemon, body_pokemon)
-    (family, family_dict) = create_fusion_family(head_pokemon, body_pokemon, family_dict)
-    family_order = create_fusion_family_order(head_pokemon, body_pokemon)
-    fusion = Pokedex(
-        pokedex_number=pokedex_number,
-        species=species,
-        type_primary=type_primary,
-        type_secondary=type_secondary,
-        family_order=family_order,
-        family=family,
-        head_pokemon=head_pokemon,
-        body_pokemon=body_pokemon,
-        stats=stats
-    )
-    default_sprite = Sprite(
-        variant='',
-        artist_info=japeal,
-        pokedex_info=fusion
-    )
-    return (fusion, family_dict)
+# def create_fusion(head_pokemon: Type[Pokedex], body_pokemon: Type[Pokedex], japeal:Type[Artist], family_dict: dict) -> (Type[Pokedex], dict):
+#     pokedex_number = create_fusion_pokedex_number(head_pokemon, body_pokemon)
+#     species = create_fusion_species(head_pokemon, body_pokemon)
+#     type_primary, type_secondary = create_fusion_typing(head_pokemon, body_pokemon)
+#     (family, family_dict) = create_fusion_family(head_pokemon, body_pokemon, family_dict)
+#     family_order = create_fusion_family_order(head_pokemon, body_pokemon)
+#     stats = create_fusion_stats(head_pokemon, body_pokemon)
+#     fusion = Pokedex(
+#         pokedex_number=pokedex_number,
+#         species=species,
+#         type_primary=type_primary,
+#         type_secondary=type_secondary,
+#         family_order=family_order,
+#         family=family,
+#         head_pokemon=head_pokemon,
+#         body_pokemon=body_pokemon,
+#         stats=stats
+#     )
+#     default_sprite = Sprite(
+#         variant='',
+#         artist_info=japeal,
+#         pokedex_info=fusion
+#     )
+#     return (fusion, family_dict)
 
 
-
+# @func_timer
+# def convert_pokedex(pokedex: dict, session_add: bool = True) -> dict:
+#     """Converts the pokedex dictionaries into class instances for DB insertion."""
+#     pokedex_copy = pokedex.copy()
+#     for key, pokemon in pokedex_copy.items():
+#         stats = PokedexStats(
+#             hp=pokemon['hp'],
+#             attack=pokemon['attack'],
+#             defense=pokemon['defense'],
+#             sp_attack=pokemon['sp_attack'],
+#             sp_defense=pokemon['sp_defense'],
+#             speed=pokemon['speed']
+#         )
+#         pokedex_instance = Pokedex(
+#             pokedex_number=pokemon['pokedex_number'],
+#             species=pokemon['species'],
+#             type_primary=pokemon['type_primary'],
+#             type_secondary=pokemon['type_secondary'],
+#             family_order=pokemon['family_order'],
+#             name_head=pokemon['name_head'],
+#             name_body=pokemon['name_body'],
+#             stats=stats
+#         )
+#         pokedex_instance.family_number = pokemon['family_number']
+#         pokedex[key] = pokedex_instance
+#     return pokedex
 
 
 def session_check(session_type: str ="all"):
@@ -590,40 +631,6 @@ def session_check(session_type: str ="all"):
                 print(item)
     else:
         raise ValueError("Incorrect Session Type")
-
-
-def new_pokedex_from_files(base_dex_path: str, removed_dex_path: str) -> (dict, list):
-    """Reads pokedex files and returns a dict of the pokedex and a list of any duplicates found"""
-    new_dex = {}
-    duplicates = []
-    with (open(base_dex_path, newline='') as dexfile, open(removed_dex_path, newline='') as rdexfile):
-        both_dexes = chain(csv.DictReader(rdexfile), csv.DictReader(dexfile))
-        for row in both_dexes:
-            pokedex_number, species = row['pokedex_number'], row['species']
-            if species in new_dex:
-                duplicates.append((
-                    {'pokedex_number':pokedex_number, 'species':species}, 
-                    {'pokedex_number':new_dex[species].pokedex_number,'species':species}
-                ))
-            if pokedex_number in {entry.pokedex_number for entry in new_dex.values()}:
-                dupes.append((
-                    {'pokedex_number':pokedex_number, 'species':species}, 
-                    {'pokedex_number':pokedex_number,'species':new_dex_nums[pokedex_number]}
-                ))
-            stats_object = PokedexStats(
-                hp=int(row['hp']), attack=int(row['attack']), defense=int(row['defense']), 
-                sp_attack=int(row['sp_attack']), sp_defense=int(row['sp_defense']), speed=int(row['speed']))
-            family_object = Family(
-                family_number=row['family_number']
-            )
-            dex_object = Pokedex(
-                pokedex_number=pokedex_number, species=species, type_primary=row['type_primary'], type_secondary=row['type_secondary'], 
-                family=family_object, family_order=row['family_order'], 
-                name_head=row['name_head'], name_body=row['name_body'], stats=stats_object)
-            new_dex[species] = dex_object
-    return new_dex, duplicates
-
-
 
 
 if __name__ == "__main__":

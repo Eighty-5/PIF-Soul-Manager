@@ -127,7 +127,7 @@
                         <option selected disabled>Evolve to...</option>
                         {% for evo in pokemon.pokedex_info.evolutions() %}
                           {% if evo != pokemon.pokedex_info %}
-                            <option value="{{ evo.pokedex_number }}">{{ evo.split_names() }}</option>
+                            <option value="{{ evo.pokedex_number }}">{{ evo.display_name() }}</option>
                           {% endif %}
                         {% endfor %}
                       </select>
@@ -266,7 +266,7 @@
                             <option selected disabled>Evolve to...</option>
                             {% for evo in pokemon.pokedex_info.evolutions() %}
                               {% if evo.pokedex_number != pokemon.pokedex_info.pokedex_number %}
-                                <option value="{{ evo.pokedex_number }}">{{ evo.split_names() }}</option>
+                                <option value="{{ evo.pokedex_number }}">{{ evo.display_name() }}</option>
                               {% endif %}
                             {% endfor %}
                           </select>

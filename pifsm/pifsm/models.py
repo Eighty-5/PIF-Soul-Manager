@@ -71,7 +71,7 @@ class Save(db.Model):
     __tablename__ = "save"
     
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), index=True)
     slot: Mapped[int]
     save_name: Mapped[Optional[str]] = mapped_column(String(32))
     ruleset: Mapped[int]
@@ -118,7 +118,7 @@ class Player(db.Model):
     __tablename__ = "player"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    save_id: Mapped[int] = mapped_column(ForeignKey("save.id"))
+    save_id: Mapped[int] = mapped_column(ForeignKey("save.id"), index=True)
     player_number: Mapped[int]
     player_name: Mapped[str] = mapped_column(String(20))
     
@@ -141,11 +141,11 @@ class Pokemon(CRUDMixin, db.Model):
     __tablename__ = "pokemon"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    player_id: Mapped[int] = mapped_column(ForeignKey("player.id"))
-    pokedex_id: Mapped[Optional[int]] = mapped_column(ForeignKey("pokedex.id"))
-    route_id: Mapped[Optional[int]] = mapped_column(ForeignKey("route.id"))
-    sprite_id: Mapped[Optional[int]] = mapped_column(ForeignKey("sprite.id"))
-    soul_link_id: Mapped[Optional[int]] = mapped_column(ForeignKey("soul_link.id"))
+    player_id: Mapped[int] = mapped_column(ForeignKey("player.id"), index=True)
+    pokedex_id: Mapped[Optional[int]] = mapped_column(ForeignKey("pokedex.id"), index=True)
+    route_id: Mapped[Optional[int]] = mapped_column(ForeignKey("route.id"), index=True)
+    sprite_id: Mapped[Optional[int]] = mapped_column(ForeignKey("sprite.id"), index=True)
+    soul_link_id: Mapped[Optional[int]] = mapped_column(ForeignKey("soul_link.id"), index=True)
     nickname: Mapped[Optional[str]] = mapped_column(String(30))
     position: Mapped[str] = mapped_column(String(5))
 
@@ -197,7 +197,7 @@ class SoulLink(db.Model):
     __tablename__ = "soul_link"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    save_id: Mapped[int] = mapped_column(ForeignKey("save.id"))
+    save_id: Mapped[int] = mapped_column(ForeignKey("save.id"), index=True)
     soul_link_number: Mapped[int]
 
     linked_pokemon: Mapped[Optional[list["Pokemon"]]] = relationship(back_populates="soul_linked", cascade="all, delete")
@@ -214,8 +214,8 @@ class Route(db.Model):
     __tablename__ = "route"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    save_id: Mapped[int] = mapped_column(ForeignKey("save.id"))
-    route_list_id: Mapped[int] = mapped_column(ForeignKey("route_list.id"))
+    save_id: Mapped[int] = mapped_column(ForeignKey("save.id"), index=True)
+    route_list_id: Mapped[int] = mapped_column(ForeignKey("route_list.id"), index=True)
     complete: Mapped[bool]
 
     caught_pokemons: Mapped[list["Pokemon"]] = relationship(back_populates="route_caught")
@@ -246,7 +246,7 @@ class Pokedex(CRUDMixin, db.Model):
     species: Mapped[str] = mapped_column(String(30))
     type_primary: Mapped[str] = mapped_column(String(10))
     type_secondary: Mapped[Optional[str]] = mapped_column(String(10))
-    family_id: Mapped[Optional[int]] = mapped_column(ForeignKey("family.id"))
+    family_id: Mapped[Optional[int]] = mapped_column(ForeignKey("family.id"), index=True)
     family_order: Mapped[str] = mapped_column(String(10))
     name_head: Mapped[Optional[str]] = mapped_column(String(20))
     name_body: Mapped[Optional[str]] = mapped_column(String(20))
@@ -258,7 +258,7 @@ class Pokedex(CRUDMixin, db.Model):
     fusions_body: Mapped[list["Pokedex"]] = relationship(
         back_populates="body_pokemon", remote_side=[body_id], foreign_keys=[body_id], cascade="all, delete-orphan")
     stats: Mapped["PokedexStats"] = relationship(back_populates="info", cascade="all, delete-orphan")
-    sprites: Mapped[list["Sprite"]] = relationship(back_populates="pokedex_info", cascade="all, delete-orphan")
+    sprites: Mapped[list["Sprite"]] = relationship(back_populates="pokedex_info", order_by='Sprite.variant.desc()', cascade="all, delete-orphan")
     family: Mapped["Family"] = relationship(back_populates="evolutions")
 
     def isfusion(self):
@@ -297,7 +297,13 @@ class Pokedex(CRUDMixin, db.Model):
     
 
     def __repr__(self) -> str:
-        if self.head_pokemon:
+        if not self.family:
+            return (f"Pokedex(id={self.id!r}, pokedex_number={self.pokedex_number!r}, species={self.species!r}, "
+                    f"type_primary={self.type_primary!r}, type_secondary={self.type_secondary!r}, "
+                    f"family={self.family_number!r}, family_order={self.family_order!r}, "
+                    f"name_head={self.name_head}, name_body={self.name_body})"
+                    )
+        elif self.head_pokemon:
             return (f"Pokedex(id={self.id!r}, pokedex_number={self.pokedex_number!r}, species={self.species!r}, "
                     f"head_pokemon={self.head_pokemon.species!r}, body_pokemon={self.body_pokemon.species!r}, "
                     f"type_primary={self.type_primary!r}, type_secondary={self.type_secondary!r}, "
@@ -315,7 +321,7 @@ class Family(db.Model):
     __tablename__ = "family"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    family_number: Mapped[str] = mapped_column(String(17))
+    family_number: Mapped[str] = mapped_column(String(17), unique=True)
     evolutions: Mapped[Optional[list["Pokedex"]]] = relationship(back_populates="family", order_by="Pokedex.family_order")
 
     def __eq__(self, other, *attributes):
@@ -325,6 +331,9 @@ class Family(db.Model):
             d = float('NaN')
             return all(self.__dict__.get(a, d) == other.__dict__.get(a, d) for a in attributes)
         return self.__dict__ == other.__dict__
+
+    def __repr__(self):
+        return f"Family(id={self.id!r}, family_number={self.family_number!r})"
 
 
 class PokedexStats(CRUDMixin, db.Model):
@@ -358,14 +367,19 @@ class PokedexStats(CRUDMixin, db.Model):
                 f"defense={self.defense!r}, sp_attack={self.sp_attack!r}, sp_defense={self.sp_defense!r}, "
                 f"speed={self.speed!r}, total={self.total()!r})")
 
+    # def __repr__(self) -> str:
+    #     return (f"Stat(id={self.id!r}, species=None, hp={self.hp!r}, attack={self.attack!r}, "
+    #             f"defense={self.defense!r}, sp_attack={self.sp_attack!r}, sp_defense={self.sp_defense!r}, "
+    #             f"speed={self.speed!r}, total={self.total()!r})")
+
 
 class Sprite(db.Model):
     __tablename__ = "sprite"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     variant: Mapped[str] = mapped_column(String(2))
-    pokedex_id: Mapped[Optional[int]] = mapped_column(ForeignKey("pokedex.id"))
-    artist_id: Mapped[int] = mapped_column(ForeignKey("artist.id"))
+    pokedex_id: Mapped[Optional[int]] = mapped_column(ForeignKey("pokedex.id"), index=True)
+    artist_id: Mapped[int] = mapped_column(ForeignKey("artist.id"), index=True)
 
     artist_info: Mapped["Artist"] = relationship(back_populates="sprites")
     pokedex_info: Mapped["Pokedex"] = relationship(back_populates="sprites")

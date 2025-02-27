@@ -2,9 +2,16 @@
 
 ## Current
 
+### Typing
 1. If the "head" pokemon is a Normal/Flying type, the primary type of the fusion is always Flying, otherwise the fusion's primary type is the primary type of the "head" pokemon.
 2. If the "body" pokemon does not have a secondary type, or the "body" pokemon's secondary type is the same type as the one used from Rule 1 above, then the fusion's secondary type is the "body" pokemon's primary type. Otherwise, the fusion's secondary type is the "body" pokemon's secondary type.
 3. If the fusion ends up having the same primary type and secondary type based on Rule 1 and Rule 2 above, the fusion will not have a secondary type and will just have a single type based on Rule 1 above.
+
+### Stats
+1. HP, Sp. Attack, Sp. Defense are calculated with the formula:
+    (2/3)x(head pokemon hp) + (1/3)x(body pokemon hp)
+2. Attack, Defense, Speed are calculated with the formula:
+    (2/3)x(body pokemon hp) + (1/3)x(head pokemon hp)
 
 ## Outdated (no longer considered)
 
